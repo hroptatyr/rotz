@@ -12,8 +12,26 @@ noinst_LTLIBRARIES =
 pkglib_LTLIBRARIES =
 noinst_HEADERS =
 BUILT_SOURCES =
-EXTRA_DIST =
-CLEANFILES = $(BUILT_SOURCES)
+EXTRA_DIST = $(BUILT_SOURCES)
+CLEANFILES = 
+
+CLEANFILES += version.c
+EXTRA_DIST += version.c.in
+noinst_HEADERS += version.h
+
+noinst_LIBRARIES = librotz.a
+librotz_a_SOURCES =
+nodist_librotz_a_SOURCES = version.c
+
+bin_PROGRAMS += rotz-add
+rotz_add_SOURCES = rotz-add.c
+rotz_add_SOURCES += rotz-add-clo.h rotz-add-clo.ggo
+rotz_add_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
+rotz_add_CPPFLAGS += $(tokyocabinet_CFLAGS)
+rotz_add_LDFLAGS = $(AM_LDFLAGS)
+rotz_add_LDFLAGS += $(tokyocabinet_LIBS)
+rotz_add_LDADD = librotz.a
+BUILT_SOURCES += rotz-add-clo.c rotz-add-clo.h
 
 version.c: version.c.in $(top_builddir)/version.mk
 	sed -e 's,[@]VERSION[@],$(VERSION),g' <$(srcdir)/$@.in >$@
