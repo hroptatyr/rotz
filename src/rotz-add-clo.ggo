@@ -1,0 +1,5 @@
+args "--unamed-opts --no-handle-error --long-help -a rotz_args_info -f rotz_parser"
+package "rotz-add"
+usage "rotz-add [OPTIONS...] TAG [RSYM]..."
+description "Add TAG to rolf symbol(s) RSYM."
+
