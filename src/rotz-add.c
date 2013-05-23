@@ -60,34 +60,56 @@ typedef enum {
 	RTZCTX_FINI,
 } rtzctx_action_t;
 
+struct rtzctx_s {
+	TCBDB *t2s;
+	TCBDB *s2t;
+};
+
 
-static TCBDB*
-rotz_ctx(rtzctx_action_t what)
+static rtzctx_t
+rotz_init(void)
 {
-	static int omode = BDBOREADER | BDBOWRITER | BDBOCREAT;
-	static TCBDB *tc;
+	static const int omode = BDBOREADER | BDBOWRITER | BDBOCREAT;
+	struct rtzctx_s res;
 
-	switch (what) {
-	case RTZCTX_INIT:
-		if (LIKELY(tc == NULL)) {
-			tc = tcbdbnew();
-			tcbdbopen(tc, "rotz.hence", omode);
-		}
-		break;
-
-	case RTZCTX_FINI:
-		if (LIKELY(tc != NULL)) {
-			tcbdbclose(tc);
-			tcbdbdel(tc);
-			tc = NULL;
-		}
-		break;
-
-	case RTZCTX_GET:
-	default:
-		break;
+	if (UNLIKELY((res.t2s = tcbdbnew()) == NULL)) {
+		goto out;
+	} else if (UNLIKELY((res.s2t = tcbdbnew()) == NULL)) {
+		goto out_free_t2s;
+	} else if (!tcbdbopen(res.t2s, "rotz.hence", omode)) {
+		goto out_free_s2t;
+	} else if (!tcbdbopen(res.s2t, "rotz.forth", omode)) {
+		goto out_clo_hence;
 	}
-	return tc;
+
+	/* clone the result */
+	{
+		struct rtzctx_s *resp = malloc(sizeof(*resp));
+		*resp = res;
+		return resp;
+	}
+
+out_clo_hence:
+	tcbdbclose(res.t2s);
+out_free_s2t:
+	tcbdbdel(res.s2t);
+out_free_t2s:
+	tcbdbdel(res.t2s);
+out:
+	return NULL;
+}
+
+static void
+rotz_fini(rtzctx_t ctx)
+{
+	struct rtzctx_s *restrict cp = ctx;
+
+	tcbdbclose(cp->s2t);
+	tcbdbclose(cp->t2s);
+	tcbdbdel(cp->s2t);
+	tcbdbdel(cp->t2s);
+	free(ctx);
+	return;
 }
 
 static const char*
@@ -112,13 +134,26 @@ find_in_strlst(rtz_strlst_t lst, const char *str, size_t stz)
 
 
 rtz_strlst_t
-rotz_get_syms(rtzctx_t UNUSED(ctx), const char *tag)
+rotz_get_syms(rtzctx_t ctx, const char *tag)
 {
-	TCBDB *tc = rotz_ctx(RTZCTX_GET);
+	struct rtzctx_s *restrict cp = ctx;
 	const char *sp;
 	int z[1];
 
-	if (UNLIKELY((sp = tcbdbget3(tc, tag, strlen(tag), z)) == NULL)) {
+	if (UNLIKELY((sp = tcbdbget3(cp->t2s, tag, strlen(tag), z)) == NULL)) {
+		return (rtz_strlst_t){0U};
+	}
+	return (rtz_strlst_t){.n = (size_t)*z, .d = sp};
+}
+
+rtz_strlst_t
+rotz_get_tags(rtzctx_t ctx, const char *sym)
+{
+	struct rtzctx_s *restrict cp = ctx;
+	const char *sp;
+	int z[1];
+
+	if (UNLIKELY((sp = tcbdbget3(cp->s2t, sym, strlen(sym), z)) == NULL)) {
 		return (rtz_strlst_t){0U};
 	}
 	return (rtz_strlst_t){.n = (size_t)*z, .d = sp};
@@ -127,7 +162,7 @@ rotz_get_syms(rtzctx_t UNUSED(ctx), const char *tag)
 void
 rotz_add(rtzctx_t ctx, const char *tag, const char *sym)
 {
-	TCBDB *tc = rotz_ctx(RTZCTX_GET);
+	struct rtzctx_s *restrict cp = ctx;
 	rtz_strlst_t so_far;
 	size_t taz = strlen(tag);
 	size_t syz = strlen(sym);
@@ -135,10 +170,21 @@ rotz_add(rtzctx_t ctx, const char *tag, const char *sym)
 	if ((so_far = rotz_get_syms(ctx, tag)).d != NULL) {
 		if (UNLIKELY(find_in_strlst(so_far, sym, syz) != NULL)) {
 			/* sym is already in there, so fuck off */
-			return;
+			goto step2;
 		}
 	}
-	tcbdbputcat(tc, tag, taz, sym, syz + 1/*for \nul*/);
+	tcbdbputcat(cp->t2s, tag, taz, sym, syz + 1/*for \nul*/);
+
+step2:
+	if ((so_far = rotz_get_tags(ctx, sym)).d != NULL) {
+		if (UNLIKELY(find_in_strlst(so_far, tag, taz) != NULL)) {
+			/* tag is already in there, so fuck off */
+			goto final;
+		}
+	}
+	tcbdbputcat(cp->s2t, sym, syz, tag, taz + 1/*for \nul*/);
+
+final:
 	return;
 }
 
@@ -171,15 +217,20 @@ main(int argc, char *argv[])
 		goto out;
 	}
 
-	ctx = rotz_ctx(RTZCTX_INIT);
+	if (UNLIKELY((ctx = rotz_init()) == NULL)) {
+		fputs("Error opening rotz datastore\n", stderr);
+		res = 1;
+		goto out;
+	}
 	tag = argi->inputs[0];
 	for (unsigned int i = 1; i < argi->inputs_num; i++) {
 		const char *sym = argi->inputs[i];
 
 		rotz_add(ctx, tag, sym);
 	}
-	rotz_ctx(RTZCTX_FINI);
 
+	/* big resource freeing */
+	rotz_fini(ctx);
 out:
 	rotz_parser_free(argi);
 	return res;
