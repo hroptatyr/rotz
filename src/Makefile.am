@@ -19,9 +19,14 @@ CLEANFILES += version.c
 EXTRA_DIST += version.c.in
 noinst_HEADERS += version.h
 
-noinst_LIBRARIES = librotz.a
-librotz_a_SOURCES =
-nodist_librotz_a_SOURCES = version.c
+lib_LTLIBRARIES += librotz.la
+librotz_la_SOURCES = rotz.c rotz.h
+librotz_la_SOURCES += nifty.h
+librotz_la_CPPFLAGS = $(AM_CPPFLAGS)
+librotz_la_CPPFLAGS += $(tokyocabinet_CFLAGS)
+librotz_la_LDFLAGS = $(AM_LDFLAGS)
+librotz_la_LDFLAGS += $(tokyocabinet_LIBS)
+nodist_librotz_la_SOURCES = version.c
 
 bin_PROGRAMS += rotz-add
 rotz_add_SOURCES = rotz-add.c
@@ -30,7 +35,7 @@ rotz_add_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_add_CPPFLAGS += $(tokyocabinet_CFLAGS)
 rotz_add_LDFLAGS = $(AM_LDFLAGS)
 rotz_add_LDFLAGS += $(tokyocabinet_LIBS)
-rotz_add_LDADD = librotz.a
+rotz_add_LDADD = librotz.la
 BUILT_SOURCES += rotz-add-clo.c rotz-add-clo.h
 
 version.c: version.c.in $(top_builddir)/version.mk
