@@ -65,6 +65,14 @@ struct rtzctx_s {
 	TCBDB *s2t;
 };
 
+typedef void *rtzctx_t;
+
+/* for multiple \nul terminated strings, N is the total length in bytes. */
+typedef struct {
+	size_t n;
+	const char *d;
+} rtz_strlst_t;
+
 
 static rtzctx_t
 rotz_init(void)
@@ -251,6 +259,7 @@ main(int argc, char *argv[])
 	struct rotz_args_info argi[1];
 	rtzctx_t ctx;
 	const char *tag;
+	rtzid_t tid;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -269,11 +278,13 @@ main(int argc, char *argv[])
 		goto out;
 	}
 	tag = rotz_tag(argi->inputs[0]);
-	rotz_add_vertex(ctx, tag);
+	tid = rotz_add_vertex(ctx, tag);
 	for (unsigned int i = 1; i < argi->inputs_num; i++) {
 		const char *sym = rotz_sym(argi->inputs[i]);
+		rtzid_t sid;
 
-		rotz_add_vertex(ctx, sym);
+		sid = rotz_add_vertex(ctx, sym);
+		rotz_add_edge(ctx, tid, sid);
 	}
 
 	/* big resource freeing */
