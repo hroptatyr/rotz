@@ -189,6 +189,52 @@ final:
 }
 
 
+/* namespacify our objects */
+/* lib stuff? */
+static const char*
+rotz_glue(const char *pre, const char *str, size_t ssz)
+{
+/* produces PRE:STR, all *our* prefixes are 3 chars long */
+	static struct {
+		size_t z;
+		char *d;
+	} builder;
+
+	if (UNLIKELY(4U/*pre*/ + ssz + 1U/*\nul*/ > builder.z)) {
+		builder.z = ((4U + ssz) / 64U + 1U) * 64U;
+		builder.d = realloc(builder.d, builder.z);
+	}
+	memcpy(builder.d, pre, 3U);
+	builder.d[3] = ':';
+	memcpy(builder.d + 4U, str, ssz + 1U/*\nul*/);
+	return builder.d;
+}
+
+static const char*
+rotz_maybe_glue(const char *pre, const char *str)
+{
+	const char *p;
+
+	if (UNLIKELY(*(p = strchrnul(str, ':')))) {
+		return str;
+	}
+	/* otherwise glue */
+	return rotz_glue(pre, str, p - str);
+}
+
+static const char*
+rotz_tag(const char *tag)
+{
+	return rotz_maybe_glue("tag", tag);
+}
+
+static const char*
+rotz_sym(const char *sym)
+{
+	return rotz_glue("sym", sym, strlen(sym));
+}
+
+
 #if defined STANDALONE
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
@@ -217,20 +263,21 @@ main(int argc, char *argv[])
 		goto out;
 	}
 
-	if (UNLIKELY((ctx = rotz_init()) == NULL)) {
+	if (UNLIKELY((ctx = make_rotz("rotz.tcb")) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
 		res = 1;
 		goto out;
 	}
-	tag = argi->inputs[0];
+	tag = rotz_tag(argi->inputs[0]);
+	rotz_add_vertex(ctx, tag);
 	for (unsigned int i = 1; i < argi->inputs_num; i++) {
-		const char *sym = argi->inputs[i];
+		const char *sym = rotz_sym(argi->inputs[i]);
 
-		rotz_add(ctx, tag, sym);
+		rotz_add_vertex(ctx, sym);
 	}
 
 	/* big resource freeing */
-	rotz_fini(ctx);
+	free_rotz(ctx);
 out:
 	rotz_parser_free(argi);
 	return res;
