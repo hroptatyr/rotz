@@ -134,6 +134,7 @@ main(int argc, char *argv[])
 
 		sid = rotz_add_vertex(ctx, sym);
 		rotz_add_edge(ctx, tid, sid);
+		rotz_add_edge(ctx, sid, tid);
 	}
 
 	/* big resource freeing */
