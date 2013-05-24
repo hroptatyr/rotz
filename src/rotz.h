@@ -40,16 +40,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-typedef void *rtzctx_t;
-
 typedef struct rotz_s *restrict rotz_t;
 typedef unsigned int rtzid_t;
-
-/* for multiple \nul terminated strings, N is the total length in bytes. */
-typedef struct {
-	size_t n;
-	const char *d;
-} rtz_strlst_t;
 
 
 /* lower level graph api */
@@ -67,26 +59,5 @@ extern rtzid_t rotz_add_vertex(rotz_t, const char *v);
 /**
  * Remove vertex V from rotz db and return its ID. */
 extern rtzid_t rotz_rem_vertex(rotz_t, const char *v);
-
-
-/* our tags are 1-adic maps:
- * PRE+KEY -> {SYM, ...}  and
- * SYM -> {PRE+KEY, ...}  where
- * PRE for the 0-adic case is always `tag'. */
-extern void
-rotz_add(rtzctx_t, const char *tag, const char *sym);
-
-extern void
-rotz_del(rtzctx_t, const char *tag, const char *sym);
-
-extern void
-rotz_del_tag(rtzctx_t, const char *tag);
-
-extern void
-rotz_del_sym(rtzctx_t, const char *sym);
-
-extern rtz_strlst_t rotz_get_tags(rtzctx_t, const char *sym);
-
-extern rtz_strlst_t rotz_get_syms(rtzctx_t, const char *tag);
 
 #endif	/* INCLUDED_rotz_h_ */
