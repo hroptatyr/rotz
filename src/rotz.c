@@ -232,9 +232,9 @@ rem_from_edglst(const_edglst_t el, size_t idx)
 		memcpy(ep, el.d, (idx - 1U) * sizeof(*el.d));
 		ep += idx - 1U;
 	}
-	el.d += idx;
-	el.z -= idx;
 	if (idx < el.z) {
+		el.d += idx;
+		el.z -= idx;
 		memcpy(ep, el.d, el.z * sizeof(*el.d));
 		ep += el.z;
 	}
