@@ -3,6 +3,8 @@ include $(top_builddir)/version.mk
 LANG = C
 LC_ALL = C
 
+ACLOCAL_AMFLAGS = -I m4
+
 SUBDIRS =
 SUBDIRS += src
 
