@@ -8,7 +8,6 @@ AC_INIT([rotz], [t.i.n.a.v], [https://github.com/hroptatyr/rotz])
 AC_CONFIG_AUX_DIR([.])
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_SRCDIR([src/])
 
 dnl -------------------------------------------------------------------------
 dnl Local copyright notices.
@@ -37,9 +36,15 @@ SXE_CHECK_CC([c11 c1x c99 gnu99])
 SXE_CHECK_CFLAGS
 AC_CHECK_TOOLS([AR], [xiar ar], [false])
 AC_C_BIGENDIAN
-AC_PROG_RANLIB
 
 AM_MISSING_PROG([HELP2MAN], [help2man], ["${missing_dir}"])
+
+PKG_CHECK_MODULES([tokyocabinet], [tokyocabinet])
+
+## libtool goddess^Wgoodness
+## has to be down here as we're turning -Werror'ing off
+LT_INIT
+SXE_CHECK_LIBTOOL
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
