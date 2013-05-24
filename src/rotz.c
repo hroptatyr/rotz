@@ -105,6 +105,7 @@ get_vertex(rotz_t cp, const char *v, size_t z)
 	int res;
 
 	if (UNLIKELY((res = tcbdbaddint(cp->db, v, z, 0)) <= 0)) {
+		tcbdbout(cp->db, v, z);
 		return 0U;
 	}
 	return (rtzid_t)res;
