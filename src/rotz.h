@@ -43,6 +43,11 @@
 typedef struct rotz_s *restrict rotz_t;
 typedef unsigned int rtzid_t;
 
+typedef struct {
+	size_t z;
+	rtzid_t *d;
+} rtz_edglst_t;
+
 
 /* lower level graph api */
 extern rotz_t make_rotz(const char *dbfile);
@@ -59,5 +64,29 @@ extern rtzid_t rotz_add_vertex(rotz_t, const char *v);
 /**
  * Remove vertex V from rotz db and return its ID. */
 extern rtzid_t rotz_rem_vertex(rotz_t, const char *v);
+
+/**
+ * Return >0 iff the edge from vertex FROM to vertex TO exists. */
+extern int rotz_get_edge(rotz_t, rtzid_t from, rtzid_t to);
+
+/**
+ * Return (outgoing) edges from a vertex VID. */
+extern rtz_edglst_t rotz_get_edges(rotz_t, rtzid_t vid);
+
+/**
+ * Delete (outgoing) edges from a vertex VID. */
+extern int rotz_rem_edges(rotz_t, rtzid_t vid);
+
+/**
+ * Free up edge list resources as returned by `rotz_get_edges()'. */
+extern void rotz_free_edglst(rtz_edglst_t);
+
+/**
+ * Add an edge from vertex FROM to vertex TO. */
+extern int rotz_add_edge(rotz_t, rtzid_t from, rtzid_t to);
+
+/**
+ * Remove an edge from vertex FROM to vertex TO. */
+extern int rotz_rem_edge(rotz_t, rtzid_t from, rtzid_t to);
 
 #endif	/* INCLUDED_rotz_h_ */
