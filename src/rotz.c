@@ -331,14 +331,15 @@ rotz_rem_edge(rotz_t ctx, rtzid_t from, rtzid_t to)
 {
 	rtzvtx_t sfrom = rotz_vtx(from);
 	const_edglst_t el;
+	size_t idx;
 
 	/* get edges under */
 	if (UNLIKELY((el = get_edges(ctx, sfrom)).d == NULL) ||
-	    UNLIKELY(find_in_edglst(el, to) == 0U)) {
+	    UNLIKELY((idx = find_in_edglst(el, to)) == 0U)) {
 		/* TO isn't in there */
 		return 0;
 	}
-	if (UNLIKELY((el = rem_from_edglst(el, to)).d == NULL)) {
+	if (UNLIKELY((el = rem_from_edglst(el, idx)).d == NULL)) {
 		/* huh? */
 		return -1;
 	}
