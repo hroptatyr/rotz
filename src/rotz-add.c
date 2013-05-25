@@ -108,7 +108,7 @@ main(int argc, char *argv[])
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
 	const char *tag;
-	rtzid_t tid;
+	rtz_vtx_t tid;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -130,7 +130,7 @@ main(int argc, char *argv[])
 	tid = rotz_add_vertex(ctx, tag);
 	for (unsigned int i = 1; i < argi->inputs_num; i++) {
 		const char *sym = rotz_sym(argi->inputs[i]);
-		rtzid_t sid;
+		rtz_vtx_t sid;
 
 		sid = rotz_add_vertex(ctx, sym);
 		rotz_add_edge(ctx, tid, sid);
