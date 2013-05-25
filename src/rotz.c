@@ -128,7 +128,12 @@ get_vertex(rotz_t cp, const char *v, size_t z)
 static int
 put_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 {
+	rtz_vtxkey_t vkey = rtz_vtxkey(i);
+
 	if (tcbdbaddint(cp->db, v, z, (int)i) <= 0) {
+		return -1;
+	} else if (UNLIKELY(!tcbdbput(cp->db, vkey, RTZ_VTXKEY_Z, v, z))) {
+		tcbdbout(cp->db, v, z);
 		return -1;
 	}
 	return 0;
