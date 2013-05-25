@@ -90,6 +90,11 @@ free_rotz(rotz_t ctx)
 typedef const unsigned char *rtz_vtxkey_t;
 #define RTZ_VTXKEY_Z	(8U)
 
+typedef struct {
+	size_t z;
+	const char *d;
+} const_buf_t;
+
 static rtz_vtxkey_t
 rtz_vtxkey(rtz_vtx_t vid)
 {
@@ -148,6 +153,30 @@ rem_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t UNUSED(i))
 	return 0;
 }
 
+static const_buf_t
+get_name(rotz_t cp, rtz_vtxkey_t svtx)
+{
+	const void *sp;
+	int z[1];
+
+	if (UNLIKELY((sp = tcbdbget3(cp->db, svtx, RTZ_VTXKEY_Z, z)) == NULL)) {
+		return (const_buf_t){0U};
+	}
+	return (const_buf_t){.z = (size_t)*z, .d = sp};
+}
+
+static rtz_buf_t
+get_name_r(rotz_t cp, rtz_vtxkey_t svtx)
+{
+	void *sp;
+	int z[1];
+
+	if (UNLIKELY((sp = tcbdbget(cp->db, svtx, RTZ_VTXKEY_Z, z)) == NULL)) {
+		return (rtz_buf_t){0U};
+	}
+	return (rtz_buf_t){.z = (size_t)*z, .d = sp};
+}
+
 /* API */
 rtz_vtx_t
 rotz_get_vertex(rotz_t ctx, const char *v)
@@ -185,6 +214,43 @@ rotz_rem_vertex(rotz_t ctx, const char *v)
 		res = 0U;
 	}
 	return res;
+}
+
+const char*
+rotz_get_name(rotz_t ctx, rtz_vtx_t v)
+{
+	static char *nmspc;
+	static size_t nmspcz;
+	rtz_vtxkey_t vkey = rtz_vtxkey(v);
+	const_buf_t buf;
+
+	if (UNLIKELY((buf = get_name(ctx, vkey)).d == NULL)) {
+		return 0;
+	}
+	if (UNLIKELY(buf.z >= nmspcz)) {
+		nmspcz = ((buf.z / 64U) + 1U) * 64U;
+		nmspc = realloc(nmspc, nmspcz);
+	}
+	memcpy(nmspc, buf.d, buf.z);
+	nmspc[buf.z] = '\0';
+	return nmspc;
+}
+
+rtz_buf_t
+rotz_get_name_r(rotz_t ctx, rtz_vtx_t v)
+{
+	rtz_vtxkey_t vkey = rtz_vtxkey(v);
+
+	return get_name_r(ctx, vkey);
+}
+
+void
+rotz_free_r(rtz_buf_t buf)
+{
+	if (LIKELY(buf.d != NULL)) {
+		free(buf.d);
+	}
+	return;
 }
 
 
