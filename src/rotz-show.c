@@ -1,4 +1,4 @@
-/*** rotz-del.c -- rotz tag del'er
+/*** rotz-show.c -- rotz tag show'er
  *
  * Copyright (C) 2013 Sebastian Freundt
  *
@@ -107,8 +107,8 @@ main(int argc, char *argv[])
 {
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
-	const char *tag;
-	rtz_vtx_t tid;
+	const char *tagsym;
+	rtz_vtx_t tsid;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -126,17 +126,19 @@ main(int argc, char *argv[])
 		res = 1;
 		goto out;
 	}
-	tag = rotz_tag(argi->inputs[0]);
-	if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
+	tagsym = rotz_tag(argi->inputs[0]);
+	if (UNLIKELY((tsid = rotz_get_vertex(ctx, tagsym)) == 0U)) {
 		goto fini;
 	}
-	for (unsigned int i = 1; i < argi->inputs_num; i++) {
-		const char *sym = rotz_sym(argi->inputs[i]);
-		rtz_vtx_t sid;
+	{
+		rtz_vtxlst_t vl = rotz_get_edges(ctx, tsid);
 
-		if (LIKELY((sid = rotz_get_vertex(ctx, sym)) > 0U)) {
-			rotz_rem_edge(ctx, tid, sid);
-			rotz_rem_edge(ctx, sid, tid);
+		for (size_t i = 0; i < vl.z; i++) {
+			const char *s;
+
+			if ((s = rotz_get_name(ctx, vl.d[i])) != NULL) {
+				puts(s);
+			}
 		}
 	}
 
@@ -149,4 +151,4 @@ out:
 }
 #endif	/* STANDALONE */
 
-/* rotz-del.c ends here */
+/* rotz-show.c ends here */
