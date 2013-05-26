@@ -48,6 +48,16 @@ rotz_del_LDFLAGS += $(tokyocabinet_LIBS)
 rotz_del_LDADD = librotz.la
 BUILT_SOURCES += rotz-del-clo.c rotz-del-clo.h
 
+bin_PROGRAMS += rotz-show
+rotz_show_SOURCES = rotz-show.c
+rotz_show_SOURCES += rotz-show-clo.h rotz-show-clo.ggo
+rotz_show_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
+rotz_show_CPPFLAGS += $(tokyocabinet_CFLAGS)
+rotz_show_LDFLAGS = $(AM_LDFLAGS)
+rotz_show_LDFLAGS += $(tokyocabinet_LIBS)
+rotz_show_LDADD = librotz.la
+BUILT_SOURCES += rotz-show-clo.c rotz-show-clo.h
+
 version.c: version.c.in $(top_builddir)/version.mk
 	sed -e 's,[@]VERSION[@],$(VERSION),g' <$(srcdir)/$@.in >$@
 
