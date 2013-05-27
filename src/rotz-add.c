@@ -51,7 +51,7 @@
 static void
 add_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 {
-	const char *symspc_sym = rotz_sym(sym);
+	const char *symspc_sym;
 	rtz_vtx_t sid;
 
 	if (UNLIKELY((symspc_sym = rotz_sym(sym)) == NULL)) {
