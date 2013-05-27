@@ -1,5 +1,5 @@
 args "--unamed-opts --no-handle-error --long-help -a rotz_args_info -f rotz_parser"
-package "rotz-get"
+package "rotz-show"
 usage "rotz-show [OPTIONS...] TAG|RSYM"
 description "Show tags or symbols associated with TAG or RSYM."
 
