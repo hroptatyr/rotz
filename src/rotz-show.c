@@ -43,52 +43,17 @@
 #include <tcbdb.h>
 
 #include "rotz.h"
+#include "rotz-cmd-api.h"
 #include "nifty.h"
 
 
-/* namespacify our objects */
-/* lib stuff? */
-static const char*
-rotz_glue(const char *pre, const char *str, size_t ssz)
+static void
+iter_cb(rtz_vtx_t UNUSED(vid), const char *vtx, void *UNUSED(clo))
 {
-/* produces PRE:STR, all *our* prefixes are 3 chars long */
-	static struct {
-		size_t z;
-		char *d;
-	} builder;
-
-	if (UNLIKELY(4U/*pre*/ + ssz + 1U/*\nul*/ > builder.z)) {
-		builder.z = ((4U + ssz) / 64U + 1U) * 64U;
-		builder.d = realloc(builder.d, builder.z);
+	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1)) {
+		puts(vtx);
 	}
-	memcpy(builder.d, pre, 3U);
-	builder.d[3] = ':';
-	memcpy(builder.d + 4U, str, ssz + 1U/*\nul*/);
-	return builder.d;
-}
-
-static const char*
-rotz_maybe_glue(const char *pre, const char *str)
-{
-	const char *p;
-
-	if (UNLIKELY(*(p = strchrnul(str, ':')))) {
-		return str;
-	}
-	/* otherwise glue */
-	return rotz_glue(pre, str, p - str);
-}
-
-static const char*
-rotz_tag(const char *tag)
-{
-	return rotz_maybe_glue("tag", tag);
-}
-
-static const char*
-rotz_sym(const char *sym)
-{
-	return rotz_glue("sym", sym, strlen(sym));
+	return;
 }
 
 
@@ -96,8 +61,8 @@ rotz_sym(const char *sym)
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-add-clo.h"
-#include "rotz-add-clo.c"
+#include "rotz-show-clo.h"
+#include "rotz-show-clo.c"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */
@@ -107,16 +72,9 @@ main(int argc, char *argv[])
 {
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
-	const char *tagsym;
-	rtz_vtx_t tsid;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
-		res = 1;
-		goto out;
-	} else if (argi->inputs_num < 1) {
-		fputs("Error: no TAG argument specified\n\n", stderr);
-		rotz_parser_print_help();
 		res = 1;
 		goto out;
 	}
@@ -126,23 +84,37 @@ main(int argc, char *argv[])
 		res = 1;
 		goto out;
 	}
-	tagsym = rotz_tag(argi->inputs[0]);
-	if (UNLIKELY((tsid = rotz_get_vertex(ctx, tagsym)) == 0U)) {
-		goto fini;
-	}
-	{
-		rtz_vtxlst_t vl = rotz_get_edges(ctx, tsid);
 
-		for (size_t i = 0; i < vl.z; i++) {
-			const char *s;
+	for (unsigned int i = 0; i < argi->inputs_num; i++) {
+		const char *tagsym;
+		rtz_vtxlst_t vl;
+		rtz_vtx_t tsid;
 
-			if ((s = rotz_get_name(ctx, vl.d[i])) != NULL) {
-				puts(s);
-			}
+		tagsym = rotz_tag(argi->inputs[i]);
+		if (UNLIKELY((tsid = rotz_get_vertex(ctx, tagsym)) == 0U)) {
+			continue;
 		}
+
+		/* get all them edges and iterate */
+		vl = rotz_get_edges(ctx, tsid);
+		for (size_t j = 0; j < vl.z; j++) {
+			const char *const s = rotz_get_name(ctx, vl.d[j]);
+
+			if (UNLIKELY(s == NULL)) {
+				/* uh oh */
+				continue;
+			}
+			puts(s);
+		}
+
+		/* get ready for the next round */
+		rotz_free_vtxlst(vl);
+	}
+	if (argi->inputs_num == 0) {
+		/* show all tags mode */
+		rotz_vtx_iter(ctx, iter_cb, NULL);
 	}
 
-fini:
 	/* big resource freeing */
 	free_rotz(ctx);
 out:

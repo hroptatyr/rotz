@@ -88,7 +88,8 @@ free_rotz(rotz_t ctx)
 
 /* vertex accessors */
 typedef const unsigned char *rtz_vtxkey_t;
-#define RTZ_VTXKEY_Z	(8U)
+#define RTZ_VTXPRE	"vtx"
+#define RTZ_VTXKEY_Z	(sizeof(RTZ_VTXPRE) + sizeof(rtz_vtx_t))
 
 typedef struct {
 	size_t z;
@@ -99,11 +100,18 @@ static rtz_vtxkey_t
 rtz_vtxkey(rtz_vtx_t vid)
 {
 /* return the key for the incidence list */
-	static unsigned char vtx[RTZ_VTXKEY_Z] = "vtx:";
-	unsigned int *vi = (void*)(vtx + 4U);
+	static unsigned char vtx[RTZ_VTXKEY_Z] = RTZ_VTXPRE;
+	unsigned int *vi = (void*)(vtx + sizeof(RTZ_VTXPRE));
 
 	*vi = vid;
 	return vtx;
+}
+
+static rtz_vtx_t
+rtz_vtx(rtz_vtxkey_t x)
+{
+	const unsigned int *vi = (const void*)(x + sizeof(RTZ_VTXPRE));
+	return *vi;
 }
 
 static rtz_vtx_t
@@ -145,12 +153,14 @@ put_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 }
 
 static int
-rem_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t UNUSED(i))
+rem_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 {
-	if (!tcbdbout(cp->db, v, z)) {
-		return -1;
-	}
-	return 0;
+	rtz_vtxkey_t vkey = rtz_vtxkey(i);
+	bool x = true;
+
+	x &= tcbdbout(cp->db, v, z);
+	x &= tcbdbout(cp->db, vkey, RTZ_VTXKEY_Z);
+	return x - 1;
 }
 
 static const_buf_t
@@ -256,7 +266,8 @@ rotz_free_r(rtz_buf_t buf)
 
 /* edge accessors */
 typedef const unsigned char *rtz_edgkey_t;
-#define RTZ_EDGKEY_Z	(8U)
+#define RTZ_EDGPRE	"edg"
+#define RTZ_EDGKEY_Z	(sizeof(RTZ_EDGPRE) + sizeof(rtz_vtx_t))
 
 typedef struct {
 	size_t z;
@@ -267,11 +278,19 @@ static rtz_edgkey_t
 rtz_edgkey(rtz_vtx_t vid)
 {
 /* return the key for the incidence list */
-	static unsigned char vtx[RTZ_EDGKEY_Z] = "edg:";
-	unsigned int *vi = (void*)(vtx + 4U);
+	static unsigned char edg[RTZ_EDGKEY_Z] = RTZ_EDGPRE;
+	unsigned int *vi = (void*)(edg + sizeof(RTZ_EDGPRE));
 
 	*vi = vid;
-	return vtx;
+	return edg;
+}
+
+static __attribute__((unused)) rtz_vtx_t
+rtz_edg(rtz_edgkey_t edg)
+{
+/* return the key for the incidence list */
+	const unsigned int *vi = (const void*)(edg + sizeof(RTZ_EDGPRE));
+	return *vi;
 }
 
 static const_vtxlst_t
@@ -342,6 +361,12 @@ add_vtxlst(rotz_t ctx, rtz_edgkey_t src, const_vtxlst_t el)
 	return tcbdbput(ctx->db, src, RTZ_EDGKEY_Z, el.d, z) - 1;
 }
 
+static int
+rem_edges(rotz_t ctx, rtz_edgkey_t src)
+{
+	return tcbdbout(ctx->db, src, RTZ_EDGKEY_Z) - 1;
+}
+
 /* API */
 int
 rotz_get_edge(rotz_t ctx, rtz_vtx_t from, rtz_vtx_t to)
@@ -370,8 +395,11 @@ rotz_get_edges(rotz_t ctx, rtz_vtx_t from)
 		return (rtz_vtxlst_t){0U};
 	}
 	/* otherwise make a copy */
-	d = malloc(el.z * sizeof(*d));
-	memcpy(d, el.d, el.z);
+	{
+		size_t mz = el.z * sizeof(*d);
+		d = malloc(mz);
+		memcpy(d, el.d, mz);
+	}
 	return (rtz_vtxlst_t){.z = el.z, .d = d};
 }
 
@@ -380,7 +408,7 @@ rotz_rem_edges(rotz_t ctx, rtz_vtx_t from)
 {
 	rtz_edgkey_t sfrom = rtz_edgkey(from);
 
-	return add_vtxlst(ctx, sfrom, (const_vtxlst_t){0U});
+	return rem_edges(ctx, sfrom);
 }
 
 void
@@ -429,6 +457,35 @@ rotz_rem_edge(rotz_t ctx, rtz_vtx_t from, rtz_vtx_t to)
 	}
 	add_vtxlst(ctx, sfrom, el);
 	return 1;
+}
+
+/* testing */
+void
+rotz_vtx_iter(rotz_t ctx, void(*cb)(rtz_vtx_t, const char*, void*), void *clo)
+{
+	BDBCUR *c = tcbdbcurnew(ctx->db);
+
+	tcbdbcurjump(c, RTZ_VTXPRE, sizeof(RTZ_VTXPRE));
+	do {
+		int z[1];
+		const void *kp;
+		rtz_vtx_t vid;
+		const void *vp;
+
+		if (UNLIKELY((kp = tcbdbcurkey3(c, z)) == NULL) ||
+		    UNLIKELY(*z != sizeof(RTZ_VTXPRE) + sizeof(vid)) ||
+		    UNLIKELY(!(vid = rtz_vtx(kp)))) {
+			break;
+		} else if (UNLIKELY((vp = tcbdbcurval3(c, z)) == NULL)) {
+			continue;
+		}
+		/* otherwise just call the callback */
+		cb(vid, vp, clo);
+
+	} while (tcbdbcurnext(c));
+
+	tcbdbcurdel(c);
+	return;
 }
 
 /* rotz.c ends here */
