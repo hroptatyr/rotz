@@ -30,6 +30,7 @@ nodist_librotz_la_SOURCES = version.c
 
 bin_PROGRAMS += rotz-add
 rotz_add_SOURCES = rotz-add.c
+rotz_add_SOURCES += rotz-cmd-api.h
 rotz_add_SOURCES += rotz-add-clo.h rotz-add-clo.ggo
 rotz_add_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_add_CPPFLAGS += $(tokyocabinet_CFLAGS)
@@ -40,6 +41,7 @@ BUILT_SOURCES += rotz-add-clo.c rotz-add-clo.h
 
 bin_PROGRAMS += rotz-del
 rotz_del_SOURCES = rotz-del.c
+rotz_del_SOURCES += rotz-cmd-api.h
 rotz_del_SOURCES += rotz-del-clo.h rotz-del-clo.ggo
 rotz_del_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_del_CPPFLAGS += $(tokyocabinet_CFLAGS)
@@ -50,6 +52,7 @@ BUILT_SOURCES += rotz-del-clo.c rotz-del-clo.h
 
 bin_PROGRAMS += rotz-show
 rotz_show_SOURCES = rotz-show.c
+rotz_show_SOURCES += rotz-cmd-api.h
 rotz_show_SOURCES += rotz-show-clo.h rotz-show-clo.ggo
 rotz_show_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_show_CPPFLAGS += $(tokyocabinet_CFLAGS)
