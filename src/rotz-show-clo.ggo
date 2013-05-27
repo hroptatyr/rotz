@@ -1,5 +1,8 @@
 args "--unamed-opts --no-handle-error --long-help -a rotz_args_info -f rotz_parser"
 package "rotz-show"
-usage "rotz-show [OPTIONS...] [TAG|RSYM]"
-description "Show tags or symbols associated with TAG or RSYM."
+usage "rotz-show [OPTIONS...] [TAG|RSYM].."
+description "Show tags or symbols associated with TAG or RSYM.
+
+Multiple tags or symbols may be specified in which case the disjunction
+is returned."
 

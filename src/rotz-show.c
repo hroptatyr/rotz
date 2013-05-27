@@ -107,16 +107,9 @@ main(int argc, char *argv[])
 {
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
-	const char *tagsym;
-	rtz_vtx_t tsid;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
-		res = 1;
-		goto out;
-	} else if (argi->inputs_num < 1) {
-		fputs("Error: no TAG argument specified\n\n", stderr);
-		rotz_parser_print_help();
 		res = 1;
 		goto out;
 	}
@@ -126,13 +119,19 @@ main(int argc, char *argv[])
 		res = 1;
 		goto out;
 	}
-	tagsym = rotz_tag(argi->inputs[0]);
-	if (UNLIKELY((tsid = rotz_get_vertex(ctx, tagsym)) == 0U)) {
-		goto fini;
-	}
-	{
-		rtz_vtxlst_t vl = rotz_get_edges(ctx, tsid);
 
+	for (unsigned int i = 0; i < argi->inputs_num; i++) {
+		const char *tagsym;
+		rtz_vtxlst_t vl;
+		rtz_vtx_t tsid;
+
+		tagsym = rotz_tag(argi->inputs[i]);
+		if (UNLIKELY((tsid = rotz_get_vertex(ctx, tagsym)) == 0U)) {
+			continue;
+		}
+
+		/* get all them edges and iterate */
+		vl = rotz_get_edges(ctx, tsid);
 		for (size_t i = 0; i < vl.z; i++) {
 			const char *const s = rotz_get_name(ctx, vl.d[i]);
 
@@ -143,7 +142,12 @@ main(int argc, char *argv[])
 			puts(s);
 		}
 
+		/* get ready for the next round */
 		rotz_free_vtxlst(vl);
+	}
+	if (argi->inputs_num == 0) {
+		/* show all tags mode */
+		;
 	}
 
 fini:
