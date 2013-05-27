@@ -42,6 +42,9 @@
 #include <string.h>
 #include "nifty.h"
 
+#define RTZ_TAGSPC	"tag"
+#define RTZ_SYMSPC	"sym"
+
 
 /* namespacify our objects */
 /* lib stuff? */
@@ -79,13 +82,13 @@ rotz_maybe_glue(const char *pre, const char *str)
 static inline const char*
 rotz_tag(const char *tag)
 {
-	return rotz_maybe_glue("tag", tag);
+	return rotz_maybe_glue(RTZ_TAGSPC, tag);
 }
 
 static inline const char*
 rotz_sym(const char *sym)
 {
-	return rotz_glue("sym", sym, strlen(sym));
+	return rotz_glue(RTZ_SYMSPC, sym, strlen(sym));
 }
 
 #endif	/* INCLUDED_rotz_cmd_api_h_ */
