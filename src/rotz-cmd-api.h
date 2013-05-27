@@ -57,7 +57,9 @@ rotz_glue(const char *pre, const char *str, size_t ssz)
 		char *d;
 	} builder;
 
-	if (UNLIKELY(4U/*pre*/ + ssz + 1U/*\nul*/ > builder.z)) {
+	if (UNLIKELY(ssz == 0U)) {
+		return NULL;
+	} else if (UNLIKELY(4U/*pre*/ + ssz + 1U/*\nul*/ > builder.z)) {
 		builder.z = ((4U + ssz) / 64U + 1U) * 64U;
 		builder.d = realloc(builder.d, builder.z);
 	}
