@@ -47,6 +47,19 @@
 #include "nifty.h"
 
 
+static void
+add_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
+{
+	const char *symspc_sym = rotz_sym(sym);
+	rtz_vtx_t sid;
+
+	sid = rotz_add_vertex(ctx, symspc_sym);
+	rotz_add_edge(ctx, tid, sid);
+	rotz_add_edge(ctx, sid, tid);
+	return;
+}
+
+
 #if defined STANDALONE
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
@@ -87,11 +100,8 @@ main(int argc, char *argv[])
 	}
 	for (unsigned int i = 1; i < argi->inputs_num; i++) {
 		const char *sym = rotz_sym(argi->inputs[i]);
-		rtz_vtx_t sid;
 
-		sid = rotz_add_vertex(ctx, sym);
-		rotz_add_edge(ctx, tid, sid);
-		rotz_add_edge(ctx, sid, tid);
+		add_tag(ctx, tid, sym);
 	}
 
 fini:
