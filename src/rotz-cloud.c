@@ -1,4 +1,4 @@
-/*** rotz-add.c -- rotz tag adder
+/*** rotz-cloud.c -- rotz tag cloud'er
  *
  * Copyright (C) 2013 Sebastian Freundt
  *
@@ -37,7 +37,6 @@
 #if defined HAVE_CONFIG_H
 # include "config.h"
 #endif	/* HAVE_CONFIG_H */
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -47,20 +46,39 @@
 #include "rotz-cmd-api.h"
 #include "nifty.h"
 
+static rotz_t ctx;
+
+struct iter_clo_s {
+	struct {
+		size_t z;
+		const char *d;
+	} pre;
+};
+
 
 static void
-add_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
+iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 {
-	const char *symspc_sym;
-	rtz_vtx_t sid;
+	const struct iter_clo_s *cp = clo;
+	rtz_vtxlst_t el;
 
-	if (UNLIKELY((symspc_sym = rotz_sym(sym)) == NULL)) {
+	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
+		/* that's a symbol, vtx would be a tag then */
 		return;
-	} else if (UNLIKELY((sid = rotz_add_vertex(ctx, symspc_sym)) == 0U)) {
+	} else if (memcmp(vtx, RTZ_TAGSPC, sizeof(RTZ_TAGSPC) - 1) == 0) {
+		vtx += RTZ_PRE_Z;
+	}
+
+	if (cp && memcmp(vtx, cp->pre.d, cp->pre.z)) {
+		/* not matching prefix */
 		return;
 	}
-	rotz_add_edge(ctx, tid, sid);
-	rotz_add_edge(ctx, sid, tid);
+
+	el = rotz_get_edges(ctx, vid);
+	fputs(vtx, stdout);
+	fputc('\t', stdout);
+	fprintf(stdout, "%zu\n", el.z);
+	rotz_free_vtxlst(el);
 	return;
 }
 
@@ -69,8 +87,8 @@ add_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-add-clo.h"
-#include "rotz-add-clo.c"
+#include "rotz-cloud-clo.h"
+#include "rotz-cloud-clo.c"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */
@@ -78,19 +96,13 @@ add_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 int
 main(int argc, char *argv[])
 {
+	static struct iter_clo_s iclo;
 	struct rotz_args_info argi[1];
-	rotz_t ctx;
 	const char *db = "rotz.tcb";
-	const char *tag;
-	rtz_vtx_t tid;
+	struct iter_clo_s *icp = NULL;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
-		res = 1;
-		goto out;
-	} else if (argi->inputs_num < 1) {
-		fputs("Error: no TAG argument specified\n\n", stderr);
-		rotz_parser_print_help();
 		res = 1;
 		goto out;
 	}
@@ -103,27 +115,15 @@ main(int argc, char *argv[])
 		res = 1;
 		goto out;
 	}
-	tag = rotz_tag(argi->inputs[0]);
-	if (UNLIKELY((tid = rotz_add_vertex(ctx, tag)) == 0U)) {
-		goto fini;
-	}
-	for (unsigned int i = 1; i < argi->inputs_num; i++) {
-		add_tag(ctx, tid, argi->inputs[i]);
-	}
-	if (argi->inputs_num == 1 && !isatty(STDIN_FILENO)) {
-		/* add tags from stdin */
-		char *line = NULL;
-		size_t llen = 0U;
-		ssize_t nrd;
 
-		while ((nrd = getline(&line, &llen, stdin)) > 0) {
-			line[nrd - 1] = '\0';
-			add_tag(ctx, tid, line);
-		}
-		free(line);
+	/* cloud all tags mode, undocumented prefix feature */
+	if (argi->inputs_num) {
+		iclo.pre.z = strlen(argi->inputs[0]);
+		iclo.pre.d = argi->inputs[0];
+		icp = &iclo;
 	}
+	rotz_vtx_iter(ctx, iter_cb, icp);
 
-fini:
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
@@ -132,4 +132,4 @@ out:
 }
 #endif	/* STANDALONE */
 
-/* rotz-add.c ends here */
+/* rotz-cloud.c ends here */

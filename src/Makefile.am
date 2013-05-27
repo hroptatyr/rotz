@@ -61,6 +61,17 @@ rotz_show_LDFLAGS += $(tokyocabinet_LIBS)
 rotz_show_LDADD = librotz.la
 BUILT_SOURCES += rotz-show-clo.c rotz-show-clo.h
 
+noinst_PROGRAMS += rotz-cloud
+rotz_cloud_SOURCES = rotz-cloud.c
+rotz_cloud_SOURCES += rotz-cmd-api.h
+rotz_cloud_SOURCES += rotz-cloud-clo.h rotz-cloud-clo.ggo
+rotz_cloud_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
+rotz_cloud_CPPFLAGS += $(tokyocabinet_CFLAGS)
+rotz_cloud_LDFLAGS = $(AM_LDFLAGS)
+rotz_cloud_LDFLAGS += $(tokyocabinet_LIBS)
+rotz_cloud_LDADD = librotz.la
+BUILT_SOURCES += rotz-cloud-clo.c rotz-cloud-clo.h
+
 version.c: version.c.in $(top_builddir)/version.mk
 	sed -e 's,[@]VERSION[@],$(VERSION),g' <$(srcdir)/$@.in >$@
 

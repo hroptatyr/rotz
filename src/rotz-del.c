@@ -37,6 +37,7 @@
 #if defined HAVE_CONFIG_H
 # include "config.h"
 #endif	/* HAVE_CONFIG_H */
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -45,6 +46,23 @@
 #include "rotz.h"
 #include "rotz-cmd-api.h"
 #include "nifty.h"
+
+
+static void
+del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
+{
+	const char *symspc_sym;
+	rtz_vtx_t sid;
+
+	if (UNLIKELY((symspc_sym = rotz_sym(sym)) == NULL)) {
+		return;
+	} else if (LIKELY((sid = rotz_get_vertex(ctx, symspc_sym)) == 0U)) {
+		return;
+	}
+	rotz_rem_edge(ctx, tid, sid);
+	rotz_rem_edge(ctx, sid, tid);
+	return;
+}
 
 
 #if defined STANDALONE
@@ -90,15 +108,9 @@ main(int argc, char *argv[])
 		goto fini;
 	}
 	for (unsigned int i = 1; i < argi->inputs_num; i++) {
-		const char *sym = rotz_sym(argi->inputs[i]);
-		rtz_vtx_t sid;
-
-		if (LIKELY((sid = rotz_get_vertex(ctx, sym)) > 0U)) {
-			rotz_rem_edge(ctx, tid, sid);
-			rotz_rem_edge(ctx, sid, tid);
-		}
+		del_tag(ctx, tid, argi->inputs[i]);
 	}
-	if (argi->inputs_num == 1) {
+	if (argi->inputs_num == 1 && isatty(STDIN_FILENO)) {
 		/* del all syms with TAG mode */
 		rtz_vtxlst_t el;
 
@@ -116,6 +128,17 @@ main(int argc, char *argv[])
 		rotz_free_vtxlst(el);
 		/* finally delete the vertex */
 		rotz_rem_vertex(ctx, tag);
+	} else if (argi->inputs_num == 1) {
+		/* del tag/sym pairs from stdin */
+		char *line = NULL;
+		size_t llen = 0U;
+		ssize_t nrd;
+
+		while ((nrd = getline(&line, &llen, stdin)) > 0) {
+			line[nrd - 1] = '\0';
+			del_tag(ctx, tid, line);
+		}
+		free(line);
 	}
 
 fini:
