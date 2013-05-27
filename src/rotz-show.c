@@ -54,6 +54,7 @@ iter_cb(rtz_vtx_t UNUSED(vid), const char *vtx, void *UNUSED(clo))
 		/* that's a symbol, vtx would be a tag then */
 		return;
 	}
+	puts(vtx);
 	return;
 }
 
