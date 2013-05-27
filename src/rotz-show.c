@@ -106,6 +106,7 @@ main(int argc, char *argv[])
 {
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
+	const char *db = "rotz.tcb";
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -113,7 +114,10 @@ main(int argc, char *argv[])
 		goto out;
 	}
 
-	if (UNLIKELY((ctx = make_rotz("rotz.tcb")) == NULL)) {
+	if (argi->database_given) {
+		db = argi->database_arg;
+	}
+	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
 		res = 1;
 		goto out;
