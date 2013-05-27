@@ -134,11 +134,13 @@ main(int argc, char *argv[])
 		rtz_vtxlst_t vl = rotz_get_edges(ctx, tsid);
 
 		for (size_t i = 0; i < vl.z; i++) {
-			const char *s;
+			const char *const s = rotz_get_name(ctx, vl.d[i]);
 
-			if ((s = rotz_get_name(ctx, vl.d[i])) != NULL) {
-				puts(s);
+			if (UNLIKELY(s == NULL)) {
+				/* uh oh */
+				continue;
 			}
+			puts(s);
 		}
 	}
 
