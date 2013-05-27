@@ -54,7 +54,9 @@ add_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 	const char *symspc_sym = rotz_sym(sym);
 	rtz_vtx_t sid;
 
-	sid = rotz_add_vertex(ctx, symspc_sym);
+	if (UNLIKELY((sid = rotz_add_vertex(ctx, symspc_sym)) == 0U)) {
+		return;
+	}
 	rotz_add_edge(ctx, tid, sid);
 	rotz_add_edge(ctx, sid, tid);
 	return;
