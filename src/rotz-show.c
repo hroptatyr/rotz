@@ -50,9 +50,40 @@
 static void
 iter_cb(rtz_vtx_t UNUSED(vid), const char *vtx, void *UNUSED(clo))
 {
-	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1)) {
-		puts(vtx);
+	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_PRE_Z) - 1) == 0) {
+		/* that's a symbol, vtx would be a tag then */
+		return;
 	}
+	return;
+}
+
+static void
+show_tagsym(rotz_t ctx, rtz_vtx_t tsid)
+{
+/* show all syms associated with tag vertex TSID, or
+ * all tags assoc'd with sym vertex TSID. */
+	rtz_vtxlst_t vl;
+
+	/* get all them edges and iterate */
+	vl = rotz_get_edges(ctx, tsid);
+	for (size_t j = 0; j < vl.z; j++) {
+		const char *s = rotz_get_name(ctx, vl.d[j]);
+
+		if (UNLIKELY(s == NULL)) {
+			/* uh oh */
+			continue;
+		} else if (!memcmp(s, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1)) {
+			/* aaah, a symbol */
+			s += RTZ_PRE_Z;
+		} else if (!memcmp(s, RTZ_TAGSPC, sizeof(RTZ_TAGSPC) - 1)) {
+			/* aaah, a tag */
+			s += RTZ_PRE_Z;
+		}
+		puts(s);
+	}
+
+	/* get ready for the next round */
+	rotz_free_vtxlst(vl);
 	return;
 }
 
@@ -86,29 +117,22 @@ main(int argc, char *argv[])
 	}
 
 	for (unsigned int i = 0; i < argi->inputs_num; i++) {
+		const char *const input = argi->inputs[i];
 		const char *tagsym;
-		rtz_vtxlst_t vl;
 		rtz_vtx_t tsid;
 
-		tagsym = rotz_tag(argi->inputs[i]);
-		if (UNLIKELY((tsid = rotz_get_vertex(ctx, tagsym)) == 0U)) {
+		if ((tagsym = rotz_tag(input),
+		     tsid = rotz_get_vertex(ctx, tagsym))) {
+			;
+		} else if ((tagsym = rotz_sym(input),
+			    tsid = rotz_get_vertex(ctx, tagsym))) {
+			;
+		} else {
+			/* nothing to worry about */
 			continue;
 		}
 
-		/* get all them edges and iterate */
-		vl = rotz_get_edges(ctx, tsid);
-		for (size_t j = 0; j < vl.z; j++) {
-			const char *const s = rotz_get_name(ctx, vl.d[j]);
-
-			if (UNLIKELY(s == NULL)) {
-				/* uh oh */
-				continue;
-			}
-			puts(s);
-		}
-
-		/* get ready for the next round */
-		rotz_free_vtxlst(vl);
+		show_tagsym(ctx, tsid);
 	}
 	if (argi->inputs_num == 0) {
 		/* show all tags mode */
