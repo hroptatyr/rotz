@@ -43,7 +43,7 @@
 #include "nifty.h"
 
 #define RTZ_TAGSPC	"tag"
-#define RTZ_SYMSPC	"sym"
+#define RTZ_SYMSPC	":::"
 
 
 /* namespacify our objects */
