@@ -1,7 +1,9 @@
 args "--unamed-opts --no-handle-error --long-help -a rotz_args_info -f rotz_parser"
 package "rotz-del"
 usage "rotz-del [OPTIONS...] TAG [RSYM]..."
-description "Remove TAG from rolf symbol(s) RSYM."
+description "Remove TAG from rolf symbol(s) RSYM.
+
+If RSYM is omitted on the command line, read symbols from stdin."
 
 option "database" -
 	"Tagging service file or host, default: `rotz.tcb'"
