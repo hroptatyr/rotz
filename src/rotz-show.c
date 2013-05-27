@@ -91,6 +91,13 @@ rotz_sym(const char *sym)
 	return rotz_glue("sym", sym, strlen(sym));
 }
 
+static void
+iter_cb(rtz_vtx_t UNUSED(vid), const char *vtx, void *UNUSED(clo))
+{
+	puts(vtx);
+	return;
+}
+
 
 #if defined STANDALONE
 #if defined __INTEL_COMPILER
@@ -147,7 +154,7 @@ main(int argc, char *argv[])
 	}
 	if (argi->inputs_num == 0) {
 		/* show all tags mode */
-		;
+		rotz_vtx_iter(ctx, iter_cb, NULL);
 	}
 
 	/* big resource freeing */
