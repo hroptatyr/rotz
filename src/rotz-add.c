@@ -37,6 +37,7 @@
 #if defined HAVE_CONFIG_H
 # include "config.h"
 #endif	/* HAVE_CONFIG_H */
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -102,6 +103,17 @@ main(int argc, char *argv[])
 		const char *sym = rotz_sym(argi->inputs[i]);
 
 		add_tag(ctx, tid, sym);
+	}
+	if (argi->inputs_num == 1 && !isatty(STDIN_FILENO)) {
+		/* add tags from stdin */
+		char *line = NULL;
+		size_t llen = 0U;
+		ssize_t nrd;
+
+		while ((nrd = getline(&line, &llen, stdin)) > 0) {
+			add_tag(ctx, tid, line);
+		}
+		free(line);
 	}
 
 fini:
