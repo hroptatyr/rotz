@@ -451,4 +451,33 @@ rotz_rem_edge(rotz_t ctx, rtz_vtx_t from, rtz_vtx_t to)
 	return 1;
 }
 
+/* testing */
+void
+rotz_vtx_iter(rotz_t ctx, void(*cb)(rtz_vtx_t, const char*, void*), void *clo)
+{
+	BDBCUR *c = tcbdbcurnew(ctx->db);
+
+	tcbdbcurjump(c, RTZ_VTXPRE, sizeof(RTZ_VTXPRE));
+	do {
+		int z[1];
+		const void *kp;
+		rtz_vtx_t vid;
+		const void *vp;
+
+		if (UNLIKELY((kp = tcbdbcurkey3(c, z)) == NULL) ||
+		    UNLIKELY(*z != sizeof(RTZ_VTXPRE) + sizeof(vid)) ||
+		    UNLIKELY(!(vid = rtz_vtx(kp)))) {
+			break;
+		} else if (UNLIKELY((vp = tcbdbcurval3(c, z)) == NULL)) {
+			continue;
+		}
+		/* otherwise just call the callback */
+		cb(vid, vp, clo);
+
+	} while (tcbdbcurnext(c));
+
+	tcbdbcurdel(c);
+	return;
+}
+
 /* rotz.c ends here */
