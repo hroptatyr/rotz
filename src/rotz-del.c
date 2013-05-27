@@ -96,8 +96,8 @@ rotz_sym(const char *sym)
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-add-clo.h"
-#include "rotz-add-clo.c"
+#include "rotz-del-clo.h"
+#include "rotz-del-clo.c"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */
@@ -138,6 +138,25 @@ main(int argc, char *argv[])
 			rotz_rem_edge(ctx, tid, sid);
 			rotz_rem_edge(ctx, sid, tid);
 		}
+	}
+	if (argi->inputs_num == 1) {
+		/* del all syms with TAG mode */
+		rtz_vtxlst_t el;
+
+		if (UNLIKELY((el = rotz_get_edges(ctx, tid)).d == NULL)) {
+			/* nothing to delete */
+			goto fini;
+		}
+		/* get rid of all the edges */
+		rotz_rem_edges(ctx, tid);
+		/* now go through the list EL and delete TID */
+		for (size_t i = 0; i < el.z; i++) {
+			rotz_rem_edge(ctx, el.d[i], tid);
+		}
+		/* finalise the list */
+		rotz_free_vtxlst(el);
+		/* finally delete the vertex */
+		rotz_rem_vertex(ctx, tag);
 	}
 
 fini:

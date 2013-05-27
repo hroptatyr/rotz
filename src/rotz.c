@@ -153,12 +153,14 @@ put_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 }
 
 static int
-rem_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t UNUSED(i))
+rem_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 {
-	if (!tcbdbout(cp->db, v, z)) {
-		return -1;
-	}
-	return 0;
+	rtz_vtxkey_t vkey = rtz_vtxkey(i);
+	bool x = true;
+
+	x &= tcbdbout(cp->db, v, z);
+	x &= tcbdbout(cp->db, vkey, RTZ_VTXKEY_Z);
+	return x - 1;
 }
 
 static const_buf_t
@@ -359,6 +361,12 @@ add_vtxlst(rotz_t ctx, rtz_edgkey_t src, const_vtxlst_t el)
 	return tcbdbput(ctx->db, src, RTZ_EDGKEY_Z, el.d, z) - 1;
 }
 
+static int
+rem_edges(rotz_t ctx, rtz_edgkey_t src)
+{
+	return tcbdbout(ctx->db, src, RTZ_EDGKEY_Z) - 1;
+}
+
 /* API */
 int
 rotz_get_edge(rotz_t ctx, rtz_vtx_t from, rtz_vtx_t to)
@@ -400,7 +408,7 @@ rotz_rem_edges(rotz_t ctx, rtz_vtx_t from)
 {
 	rtz_edgkey_t sfrom = rtz_edgkey(from);
 
-	return add_vtxlst(ctx, sfrom, (const_vtxlst_t){0U});
+	return rem_edges(ctx, sfrom);
 }
 
 void
