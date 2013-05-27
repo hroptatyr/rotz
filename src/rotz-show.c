@@ -50,7 +50,9 @@
 static void
 iter_cb(rtz_vtx_t UNUSED(vid), const char *vtx, void *UNUSED(clo))
 {
-	puts(vtx);
+	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1)) {
+		puts(vtx);
+	}
 	return;
 }
 
