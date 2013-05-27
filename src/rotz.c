@@ -153,12 +153,14 @@ put_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 }
 
 static int
-rem_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t UNUSED(i))
+rem_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 {
-	if (!tcbdbout(cp->db, v, z)) {
-		return -1;
-	}
-	return 0;
+	rtz_vtxkey_t vkey = rtz_vtxkey(i);
+	bool x = true;
+
+	x &= tcbdbout(cp->db, v, z);
+	x &= tcbdbout(cp->db, vkey, RTZ_VTXKEY_Z);
+	return x - 1;
 }
 
 static const_buf_t
