@@ -111,11 +111,18 @@ main(int argc, char *argv[])
 	}
 
 	for (unsigned int i = 0; i < argi->inputs_num; i++) {
+		const char *const input = argi->inputs[i];
 		const char *tagsym;
 		rtz_vtx_t tsid;
 
-		tagsym = rotz_tag(argi->inputs[i]);
-		if (UNLIKELY((tsid = rotz_get_vertex(ctx, tagsym)) == 0U)) {
+		if ((tagsym = rotz_tag(input),
+		     tsid = rotz_get_vertex(ctx, tagsym))) {
+			;
+		} else if ((tagsym = rotz_sym(input),
+			    tsid = rotz_get_vertex(ctx, tagsym))) {
+			;
+		} else {
+			/* nothing to worry about */
 			continue;
 		}
 
