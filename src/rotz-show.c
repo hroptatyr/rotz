@@ -50,8 +50,9 @@
 static void
 iter_cb(rtz_vtx_t UNUSED(vid), const char *vtx, void *UNUSED(clo))
 {
-	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1)) {
-		puts(vtx);
+	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_PRE_Z) - 1) == 0) {
+		/* that's a symbol, vtx would be a tag then */
+		return;
 	}
 	return;
 }
