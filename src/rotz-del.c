@@ -96,8 +96,8 @@ rotz_sym(const char *sym)
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-add-clo.h"
-#include "rotz-add-clo.c"
+#include "rotz-del-clo.h"
+#include "rotz-del-clo.c"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */
