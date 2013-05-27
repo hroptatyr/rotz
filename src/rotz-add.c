@@ -115,6 +115,7 @@ main(int argc, char *argv[])
 		ssize_t nrd;
 
 		while ((nrd = getline(&line, &llen, stdin)) > 0) {
+			line[nrd - 1] = '\0';
 			add_tag(ctx, tid, line);
 		}
 		free(line);
