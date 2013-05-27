@@ -132,8 +132,8 @@ main(int argc, char *argv[])
 
 		/* get all them edges and iterate */
 		vl = rotz_get_edges(ctx, tsid);
-		for (size_t i = 0; i < vl.z; i++) {
-			const char *const s = rotz_get_name(ctx, vl.d[i]);
+		for (size_t j = 0; j < vl.z; j++) {
+			const char *const s = rotz_get_name(ctx, vl.d[j]);
 
 			if (UNLIKELY(s == NULL)) {
 				/* uh oh */
