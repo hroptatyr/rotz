@@ -370,8 +370,11 @@ rotz_get_edges(rotz_t ctx, rtz_vtx_t from)
 		return (rtz_vtxlst_t){0U};
 	}
 	/* otherwise make a copy */
-	d = malloc(el.z * sizeof(*d));
-	memcpy(d, el.d, el.z);
+	{
+		size_t mz = el.z * sizeof(*d);
+		d = malloc(mz);
+		memcpy(d, el.d, mz);
+	}
 	return (rtz_vtxlst_t){.z = el.z, .d = d};
 }
 
