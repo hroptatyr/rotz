@@ -108,6 +108,13 @@ rtz_vtxkey(rtz_vtx_t vid)
 }
 
 static rtz_vtx_t
+rtz_vtx(rtz_vtxkey_t x)
+{
+	const unsigned int *vi = (const void*)(x + sizeof(RTZ_VTXPRE));
+	return *vi;
+}
+
+static rtz_vtx_t
 next_id(rotz_t cp)
 {
 	static const char nid[] = "\x1d";
@@ -274,6 +281,14 @@ rtz_edgkey(rtz_vtx_t vid)
 
 	*vi = vid;
 	return edg;
+}
+
+static __attribute__((unused)) rtz_vtx_t
+rtz_edg(rtz_edgkey_t edg)
+{
+/* return the key for the incidence list */
+	const unsigned int *vi = (const void*)(edg + sizeof(RTZ_EDGPRE));
+	return *vi;
 }
 
 static const_vtxlst_t
