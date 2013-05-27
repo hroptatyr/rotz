@@ -6,3 +6,6 @@ description "Show tags or symbols associated with TAG or RSYM.
 Multiple tags or symbols may be specified in which case the disjunction
 is returned."
 
+option "database" -
+	"Tagging service file or host, default: `rotz.tcb'"
+	string typestr="FILE|HOST" optional

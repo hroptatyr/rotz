@@ -80,6 +80,7 @@ main(int argc, char *argv[])
 {
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
+	const char *db = "rotz.tcb";
 	const char *tag;
 	rtz_vtx_t tid;
 	int res = 0;
@@ -94,7 +95,10 @@ main(int argc, char *argv[])
 		goto out;
 	}
 
-	if (UNLIKELY((ctx = make_rotz("rotz.tcb")) == NULL)) {
+	if (argi->database_given) {
+		db = argi->database_arg;
+	}
+	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
 		res = 1;
 		goto out;
@@ -104,9 +108,7 @@ main(int argc, char *argv[])
 		goto fini;
 	}
 	for (unsigned int i = 1; i < argi->inputs_num; i++) {
-		const char *sym = rotz_sym(argi->inputs[i]);
-
-		add_tag(ctx, tid, sym);
+		add_tag(ctx, tid, argi->inputs[i]);
 	}
 	if (argi->inputs_num == 1 && !isatty(STDIN_FILENO)) {
 		/* add tags from stdin */
