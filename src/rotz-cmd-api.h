@@ -1,4 +1,4 @@
-/*** rotz-add.c -- rotz tag adder
+/*** rotz-cmd-api.h -- some useful glue between rotz commands
  *
  * Copyright (C) 2013 Sebastian Freundt
  *
@@ -34,70 +34,61 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ***/
-#if defined HAVE_CONFIG_H
-# include "config.h"
-#endif	/* HAVE_CONFIG_H */
+#if !defined INCLUDED_rotz_cmd_api_h_
+#define INCLUDED_rotz_cmd_api_h_
+
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <tcbdb.h>
-
-#include "rotz.h"
-#include "rotz-cmd-api.h"
 #include "nifty.h"
 
+#define RTZ_TAGSPC	"tag"
+#define RTZ_SYMSPC	":::"
+
 
-#if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-add-clo.h"
-#include "rotz-add-clo.c"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
-
-int
-main(int argc, char *argv[])
+/* namespacify our objects */
+/* lib stuff? */
+static const char*
+rotz_glue(const char *pre, const char *str, size_t ssz)
 {
-	struct rotz_args_info argi[1];
-	rotz_t ctx;
-	const char *tag;
-	rtz_vtx_t tid;
-	int res = 0;
+/* produces PRE:STR, all *our* prefixes are 3 chars long */
+	static struct {
+		size_t z;
+		char *d;
+	} builder;
 
-	if (rotz_parser(argc, argv, argi)) {
-		res = 1;
-		goto out;
-	} else if (argi->inputs_num < 1) {
-		fputs("Error: no TAG argument specified\n\n", stderr);
-		rotz_parser_print_help();
-		res = 1;
-		goto out;
+	if (UNLIKELY(4U/*pre*/ + ssz + 1U/*\nul*/ > builder.z)) {
+		builder.z = ((4U + ssz) / 64U + 1U) * 64U;
+		builder.d = realloc(builder.d, builder.z);
 	}
-
-	if (UNLIKELY((ctx = make_rotz("rotz.tcb")) == NULL)) {
-		fputs("Error opening rotz datastore\n", stderr);
-		res = 1;
-		goto out;
-	}
-	tag = rotz_tag(argi->inputs[0]);
-	tid = rotz_add_vertex(ctx, tag);
-	for (unsigned int i = 1; i < argi->inputs_num; i++) {
-		const char *sym = rotz_sym(argi->inputs[i]);
-		rtz_vtx_t sid;
-
-		sid = rotz_add_vertex(ctx, sym);
-		rotz_add_edge(ctx, tid, sid);
-		rotz_add_edge(ctx, sid, tid);
-	}
-
-	/* big resource freeing */
-	free_rotz(ctx);
-out:
-	rotz_parser_free(argi);
-	return res;
+	memcpy(builder.d, pre, 3U);
+	builder.d[3] = ':';
+	memcpy(builder.d + 4U, str, ssz + 1U/*\nul*/);
+	return builder.d;
 }
-#endif	/* STANDALONE */
 
-/* rotz-add.c ends here */
+static const char*
+rotz_maybe_glue(const char *pre, const char *str)
+{
+	const char *p;
+
+	if (UNLIKELY(*(p = strchrnul(str, ':')))) {
+		return str;
+	}
+	/* otherwise glue */
+	return rotz_glue(pre, str, p - str);
+}
+
+static inline const char*
+rotz_tag(const char *tag)
+{
+	return rotz_maybe_glue(RTZ_TAGSPC, tag);
+}
+
+static inline const char*
+rotz_sym(const char *sym)
+{
+	return rotz_glue(RTZ_SYMSPC, sym, strlen(sym));
+}
+
+#endif	/* INCLUDED_rotz_cmd_api_h_ */
