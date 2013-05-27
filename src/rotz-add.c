@@ -82,7 +82,9 @@ main(int argc, char *argv[])
 		goto out;
 	}
 	tag = rotz_tag(argi->inputs[0]);
-	tid = rotz_add_vertex(ctx, tag);
+	if (UNLIKELY((tid = rotz_add_vertex(ctx, tag)) == 0U)) {
+		goto fini;
+	}
 	for (unsigned int i = 1; i < argi->inputs_num; i++) {
 		const char *sym = rotz_sym(argi->inputs[i]);
 		rtz_vtx_t sid;
@@ -92,6 +94,7 @@ main(int argc, char *argv[])
 		rotz_add_edge(ctx, sid, tid);
 	}
 
+fini:
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
