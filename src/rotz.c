@@ -89,6 +89,7 @@ free_rotz(rotz_t ctx)
 /* vertex accessors */
 typedef const unsigned char *rtz_vtxkey_t;
 #define RTZ_VTXKEY_Z	(8U)
+#define RTZ_VTXPRE	"vtx"
 
 typedef struct {
 	size_t z;
@@ -99,11 +100,18 @@ static rtz_vtxkey_t
 rtz_vtxkey(rtz_vtx_t vid)
 {
 /* return the key for the incidence list */
-	static unsigned char vtx[RTZ_VTXKEY_Z] = "vtx:";
-	unsigned int *vi = (void*)(vtx + 4U);
+	static unsigned char vtx[RTZ_VTXKEY_Z] = RTZ_VTXPRE;
+	unsigned int *vi = (void*)(vtx + sizeof(RTZ_VTXPRE));
 
 	*vi = vid;
 	return vtx;
+}
+
+static rtz_vtx_t
+rtz_vtx(rtz_vtxkey_t x)
+{
+	const unsigned int *vi = (const void*)(x + sizeof(RTZ_VTXPRE));
+	return *vi;
 }
 
 static rtz_vtx_t
@@ -257,6 +265,7 @@ rotz_free_r(rtz_buf_t buf)
 /* edge accessors */
 typedef const unsigned char *rtz_edgkey_t;
 #define RTZ_EDGKEY_Z	(8U)
+#define RTZ_EDGPRE	"edg"
 
 typedef struct {
 	size_t z;
@@ -267,11 +276,19 @@ static rtz_edgkey_t
 rtz_edgkey(rtz_vtx_t vid)
 {
 /* return the key for the incidence list */
-	static unsigned char vtx[RTZ_EDGKEY_Z] = "edg:";
-	unsigned int *vi = (void*)(vtx + 4U);
+	static unsigned char edg[RTZ_EDGKEY_Z] = RTZ_EDGPRE;
+	unsigned int *vi = (void*)(edg + sizeof(RTZ_EDGPRE));
 
 	*vi = vid;
-	return vtx;
+	return edg;
+}
+
+static __attribute__((unused)) rtz_vtx_t
+rtz_edg(rtz_edgkey_t edg)
+{
+/* return the key for the incidence list */
+	const unsigned int *vi = (const void*)(edg + sizeof(RTZ_EDGPRE));
+	return *vi;
 }
 
 static const_vtxlst_t
@@ -432,6 +449,35 @@ rotz_rem_edge(rotz_t ctx, rtz_vtx_t from, rtz_vtx_t to)
 	}
 	add_vtxlst(ctx, sfrom, el);
 	return 1;
+}
+
+/* testing */
+void
+rotz_vtx_iter(rotz_t ctx, void(*cb)(rtz_vtx_t, const char*, void*), void *clo)
+{
+	BDBCUR *c = tcbdbcurnew(ctx->db);
+
+	tcbdbcurjump(c, RTZ_VTXPRE, sizeof(RTZ_VTXPRE));
+	do {
+		int z[1];
+		const void *kp;
+		rtz_vtx_t vid;
+		const void *vp;
+
+		if (UNLIKELY((kp = tcbdbcurkey3(c, z)) == NULL) ||
+		    UNLIKELY(*z != sizeof(RTZ_VTXPRE) + sizeof(vid)) ||
+		    UNLIKELY(!(vid = rtz_vtx(kp)))) {
+			break;
+		} else if (UNLIKELY((vp = tcbdbcurval3(c, z)) == NULL)) {
+			continue;
+		}
+		/* otherwise just call the callback */
+		cb(vid, vp, clo);
+
+	} while (tcbdbcurnext(c));
+
+	tcbdbcurdel(c);
+	return;
 }
 
 /* rotz.c ends here */

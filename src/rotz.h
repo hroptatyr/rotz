@@ -111,4 +111,11 @@ extern int rotz_add_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to);
  * Remove an edge from vertex FROM to vertex TO. */
 extern int rotz_rem_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to);
 
+
+/**
+ * Call CB for for every vertex in CTX, passing the vertex, its name and
+ * a custom pointer to a closure object CLO. */
+extern void
+rotz_vtx_iter(rotz_t, void(*cb)(rtz_vtx_t, const char*, void*), void *clo);
+
 #endif	/* INCLUDED_rotz_h_ */
