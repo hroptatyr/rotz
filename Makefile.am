@@ -12,7 +12,6 @@ EXTRA_DIST =
 DISTCLEANFILES =
 
 EXTRA_DIST += git-version-gen
-EXTRA_DIST += m4/.dir
 
 DISTCLEANFILES += version.mk
 
