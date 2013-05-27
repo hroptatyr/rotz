@@ -150,7 +150,6 @@ main(int argc, char *argv[])
 		;
 	}
 
-fini:
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
