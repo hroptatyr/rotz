@@ -47,6 +47,20 @@
 #include "nifty.h"
 
 
+static void
+del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
+{
+	const char *symspc_sym = rotz_sym(sym);
+	rtz_vtx_t sid;
+
+	if (LIKELY((sid = rotz_get_vertex(ctx, sym)) > 0U)) {
+		rotz_rem_edge(ctx, tid, sid);
+		rotz_rem_edge(ctx, sid, tid);
+	}
+	return;
+}
+
+
 #if defined STANDALONE
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
@@ -90,13 +104,7 @@ main(int argc, char *argv[])
 		goto fini;
 	}
 	for (unsigned int i = 1; i < argi->inputs_num; i++) {
-		const char *sym = rotz_sym(argi->inputs[i]);
-		rtz_vtx_t sid;
-
-		if (LIKELY((sid = rotz_get_vertex(ctx, sym)) > 0U)) {
-			rotz_rem_edge(ctx, tid, sid);
-			rotz_rem_edge(ctx, sid, tid);
-		}
+		del_tag(ctx, tid, argi->inputs[i]);
 	}
 	if (argi->inputs_num == 1) {
 		/* del all syms with TAG mode */
