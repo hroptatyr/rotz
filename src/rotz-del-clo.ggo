@@ -3,3 +3,6 @@ package "rotz-del"
 usage "rotz-del [OPTIONS...] TAG [RSYM]..."
 description "Remove TAG from rolf symbol(s) RSYM."
 
+option "database" -
+	"Tagging service file or host, default: `rotz.tcb'"
+	string typestr="FILE|HOST" optional
