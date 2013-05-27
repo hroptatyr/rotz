@@ -51,13 +51,16 @@
 static void
 del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 {
-	const char *symspc_sym = rotz_sym(sym);
+	const char *symspc_sym;
 	rtz_vtx_t sid;
 
-	if (LIKELY((sid = rotz_get_vertex(ctx, sym)) > 0U)) {
-		rotz_rem_edge(ctx, tid, sid);
-		rotz_rem_edge(ctx, sid, tid);
+	if (UNLIKELY((symspc_sym = rotz_sym(sym)) == NULL)) {
+		return;
+	} else if (LIKELY((sid = rotz_get_vertex(ctx, symspc_sym)) == 0U)) {
+		return;
 	}
+	rotz_rem_edge(ctx, tid, sid);
+	rotz_rem_edge(ctx, sid, tid);
 	return;
 }
 
