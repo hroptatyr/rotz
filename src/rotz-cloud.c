@@ -46,11 +46,20 @@
 #include "rotz-cmd-api.h"
 #include "nifty.h"
 
+static rotz_t ctx;
+
+struct iter_clo_s {
+	struct {
+		size_t z;
+		const char *d;
+	} pre;
+};
+
 
 static void
 iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 {
-	rotz_t ctx = clo;
+	const struct iter_clo_s *cp = clo;
 	rtz_vtxlst_t el;
 
 	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
@@ -58,6 +67,11 @@ iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 		return;
 	} else if (memcmp(vtx, RTZ_TAGSPC, sizeof(RTZ_TAGSPC) - 1) == 0) {
 		vtx += RTZ_PRE_Z;
+	}
+
+	if (cp && memcmp(vtx, cp->pre.d, cp->pre.z)) {
+		/* not matching prefix */
+		return;
 	}
 
 	el = rotz_get_edges(ctx, vid);
@@ -82,9 +96,10 @@ iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 int
 main(int argc, char *argv[])
 {
+	static struct iter_clo_s iclo;
 	struct rotz_args_info argi[1];
-	rotz_t ctx;
 	const char *db = "rotz.tcb";
+	struct iter_clo_s *icp = NULL;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -101,8 +116,13 @@ main(int argc, char *argv[])
 		goto out;
 	}
 
-	/* cloud all tags mode */
-	rotz_vtx_iter(ctx, iter_cb, ctx);
+	/* cloud all tags mode, undocumented prefix feature */
+	if (argi->inputs_num) {
+		iclo.pre.z = strlen(argi->inputs[0]);
+		iclo.pre.d = argi->inputs[0];
+		icp = &iclo;
+	}
+	rotz_vtx_iter(ctx, iter_cb, icp);
 
 	/* big resource freeing */
 	free_rotz(ctx);
