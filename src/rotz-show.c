@@ -142,6 +142,8 @@ main(int argc, char *argv[])
 			}
 			puts(s);
 		}
+
+		rotz_free_vtxlst(vl);
 	}
 
 fini:
