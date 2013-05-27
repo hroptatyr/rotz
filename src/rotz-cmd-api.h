@@ -44,6 +44,7 @@
 
 #define RTZ_TAGSPC	"tag"
 #define RTZ_SYMSPC	":::"
+#define RTZ_PRE_Z	(4U)
 
 
 /* namespacify our objects */
@@ -59,7 +60,7 @@ rotz_glue(const char *pre, const char *str, size_t ssz)
 
 	if (UNLIKELY(ssz == 0U)) {
 		return NULL;
-	} else if (UNLIKELY(4U/*pre*/ + ssz + 1U/*\nul*/ > builder.z)) {
+	} else if (UNLIKELY(RTZ_PRE_Z + ssz + 1U/*\nul*/ > builder.z)) {
 		builder.z = ((4U + ssz) / 64U + 1U) * 64U;
 		builder.d = realloc(builder.d, builder.z);
 	}
