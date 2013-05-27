@@ -359,6 +359,12 @@ add_vtxlst(rotz_t ctx, rtz_edgkey_t src, const_vtxlst_t el)
 	return tcbdbput(ctx->db, src, RTZ_EDGKEY_Z, el.d, z) - 1;
 }
 
+static int
+rem_edges(rotz_t ctx, rtz_edgkey_t src)
+{
+	return tcbdbout(ctx->db, src, RTZ_EDGKEY_Z) - 1;
+}
+
 /* API */
 int
 rotz_get_edge(rotz_t ctx, rtz_vtx_t from, rtz_vtx_t to)
@@ -400,7 +406,7 @@ rotz_rem_edges(rotz_t ctx, rtz_vtx_t from)
 {
 	rtz_edgkey_t sfrom = rtz_edgkey(from);
 
-	return add_vtxlst(ctx, sfrom, (const_vtxlst_t){0U});
+	return rem_edges(ctx, sfrom);
 }
 
 void
