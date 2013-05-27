@@ -72,6 +72,12 @@ show_tagsym(rotz_t ctx, rtz_vtx_t tsid)
 		if (UNLIKELY(s == NULL)) {
 			/* uh oh */
 			continue;
+		} else if (!memcmp(s, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1)) {
+			/* aaah, a symbol */
+			s += RTZ_PRE_Z;
+		} else if (!memcmp(s, RTZ_TAGSPC, sizeof(RTZ_TAGSPC) - 1)) {
+			/* aaah, a tag */
+			s += RTZ_PRE_Z;
 		}
 		puts(s);
 	}
