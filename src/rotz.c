@@ -88,8 +88,8 @@ free_rotz(rotz_t ctx)
 
 /* vertex accessors */
 typedef const unsigned char *rtz_vtxkey_t;
-#define RTZ_VTXKEY_Z	(8U)
 #define RTZ_VTXPRE	"vtx"
+#define RTZ_VTXKEY_Z	(sizeof(RTZ_VTXPRE) + sizeof(rtz_vtx_t))
 
 typedef struct {
 	size_t z;
@@ -266,8 +266,8 @@ rotz_free_r(rtz_buf_t buf)
 
 /* edge accessors */
 typedef const unsigned char *rtz_edgkey_t;
-#define RTZ_EDGKEY_Z	(8U)
 #define RTZ_EDGPRE	"edg"
+#define RTZ_EDGKEY_Z	(sizeof(RTZ_EDGPRE) + sizeof(rtz_vtx_t))
 
 typedef struct {
 	size_t z;
