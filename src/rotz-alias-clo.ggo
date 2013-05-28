@@ -1,0 +1,11 @@
+args "--unamed-opts --no-handle-error --long-help -a rotz_args_info -f rotz_parser"
+package "rotz-alias"
+usage "rotz-alias [OPTIONS...] TAG [ALIAS]..."
+description "Make ALIAS an alias for TAG.
+
+If ALIAS is omitted on the command line, read aliases from stdin.
+if no aliases are present on stdin, show aliases for TAG."
+
+option "database" -
+	"Tagging service file or host, default: `rotz.tcb'"
+	string typestr="FILE|HOST" optional
