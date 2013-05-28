@@ -473,7 +473,9 @@ rotz_rem_edge(rotz_t ctx, rtz_vtx_t from, rtz_vtx_t to)
 	return 1;
 }
 
-/* testing */
+
+/* iterators
+ * we can't keep the promise here to separate keys and tokyocabinet guts */
 void
 rotz_vtx_iter(rotz_t ctx, void(*cb)(rtz_vtx_t, const char*, void*), void *clo)
 {
