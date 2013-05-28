@@ -89,12 +89,18 @@ free_rotz(rotz_t ctx)
 /* vertex accessors
  * Our policy is that routines that know about tokyocabinet must not
  * know about vertex keys, aka keys, and so forth.
- * And vice versa. */
+ * And vice versa.
+ *
+ * We maintain 2 lookups, NAME -> ID  and VTXKEY -> NAME(s)
+ * where ID is of type rtz_vtx_t and VTXKEY is of type rtz_vtxkey_t
+ * and they're converted to one another by rtz_vtxkey() and rtz_vtx()
+ * respectively.
+ *
+ * In the mapping NAME(s) there's usually just one name but aliases
+ * of the name will be appended there. */
 typedef const unsigned char *rtz_vtxkey_t;
 #define RTZ_VTXPRE	"vtx"
 #define RTZ_VTXKEY_Z	(sizeof(RTZ_VTXPRE) + sizeof(rtz_vtx_t))
-#define RTZ_AKAPRE	"aka"
-#define RTZ_AKAKEY_Z	(sizeof(RTZ_AKAPRE) + sizeof(rtz_vtx_t))
 
 typedef struct {
 	size_t z;
@@ -110,17 +116,6 @@ rtz_vtxkey(rtz_vtx_t vid)
 
 	*vi = vid;
 	return vtx;
-}
-
-static rtz_vtxkey_t
-rtz_akakey(rtz_vtx_t v)
-{
-/* return the key for the incidence list */
-	static unsigned char aka[RTZ_AKAKEY_Z] = RTZ_AKAPRE;
-	unsigned int *vi = (void*)(aka + sizeof(RTZ_AKAPRE));
-
-	*vi = v;
-	return aka;
 }
 
 static rtz_vtx_t
@@ -210,7 +205,7 @@ put_vertex(rotz_t cp, const char *a, size_t az, rtz_vtx_t v)
 static int
 rnm_vertex(rotz_t cp, rtz_vtxkey_t vkey, const char *v, size_t z)
 {
-	if (UNLIKELY(!tcbdbput(cp->db, vkey, RTZ_VTXKEY_Z, v, z))) {
+	if (UNLIKELY(!tcbdbput(cp->db, vkey, RTZ_VTXKEY_Z, v, z + 1))) {
 		tcbdbout(cp->db, v, z);
 		return -1;
 	}
@@ -230,6 +225,60 @@ unrnm_vertex(rotz_t cp, rtz_vtxkey_t vkey)
 }
 
 static int
+add_alias(rotz_t cp, rtz_vtxkey_t vkey, const char *a, size_t az)
+{
+	return tcbdbputcat(cp->db, vkey, RTZ_VTXKEY_Z, a, az + 1) - 1;
+}
+
+static int
+add_akalst(rotz_t ctx, rtz_vtxkey_t key, const_buf_t al)
+{
+	size_t z;
+
+	if (UNLIKELY((z = al.z * sizeof(*al.d)) == 0U)) {
+		return tcbdbout(ctx->db, key, RTZ_VTXKEY_Z) - 1;
+	}
+	return tcbdbput(ctx->db, key, RTZ_VTXKEY_Z, al.d, z) - 1;
+}
+
+static const_buf_t
+get_aliases(rotz_t cp, rtz_vtxkey_t svtx)
+{
+	const void *sp;
+	int z[1];
+
+	if (UNLIKELY((sp = tcbdbget3(cp->db, svtx, RTZ_VTXKEY_Z, z)) == NULL)) {
+		return (const_buf_t){0U};
+	}
+	return (const_buf_t){.z = (size_t)*z, .d = sp};
+}
+
+static rtz_buf_t
+get_aliases_r(rotz_t cp, rtz_vtxkey_t svtx)
+{
+	void *sp;
+	int z[1];
+
+	if (UNLIKELY((sp = tcbdbget(cp->db, svtx, RTZ_VTXKEY_Z, z)) == NULL)) {
+		return (rtz_buf_t){0U};
+	}
+	return (rtz_buf_t){.z = (size_t)*z, .d = sp};
+}
+
+static rtz_buf_t
+get_name_r(rotz_t cp, rtz_vtxkey_t svtx)
+{
+	const_buf_t cb;
+
+	if (UNLIKELY((cb = get_aliases(cp, svtx)).d == NULL)) {
+		return (rtz_buf_t){0U};
+	}
+	/* we're interested in the first name only */
+	cb.z = strlen(cb.d);
+	return (rtz_buf_t){.z = cb.z, .d = strndup(cb.d, cb.z)};
+}
+
+static int
 add_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 {
 	if (UNLIKELY(put_vertex(cp, v, z, i) < 0)) {
@@ -242,54 +291,24 @@ add_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 static int
 rem_vertex(rotz_t cp, rtz_vtx_t i, const char *v, size_t z)
 {
+	rtz_vtxkey_t vkey = rtz_vtxkey(i);
+	const_buf_t al;
 	int res = 0;
 
-	res += unput_vertex(cp, v, z);
+	/* get all them aliases */
+	if (LIKELY((al = get_aliases(cp, vkey)).d != NULL)) {
+		/* go through all names in the alias list */
+		for (const char *x = al.d, *const ex = al.d + al.z;
+		     x < ex; x += z + 1) {
+			z = strlen(x);
+			res += unput_vertex(cp, x, z);
+		}
+	} else {
+		/* just to be sure */
+		res += unput_vertex(cp, v, z);
+	}
 	res += unrnm_vertex(cp, rtz_vtxkey(i));
 	return res;
-}
-
-static int
-add_alias(rotz_t cp, rtz_vtxkey_t vkey, const char *a, size_t az)
-{
-	return tcbdbputcat(cp->db, vkey, RTZ_VTXKEY_Z, a, az + 1) - 1;
-}
-
-static int
-add_akalst(rotz_t ctx, rtz_vtxkey_t key, const_buf_t al)
-{
-	size_t z;
-
-	if (UNLIKELY((z = al.z * sizeof(*al.d)) == 0U)) {
-		return tcbdbout(ctx->db, key, RTZ_AKAKEY_Z) - 1;
-	}
-	return tcbdbput(ctx->db, key, RTZ_AKAKEY_Z, al.d, z) - 1;
-}
-
-#define get_aliases	get_name
-
-static const_buf_t
-get_name(rotz_t cp, rtz_vtxkey_t svtx)
-{
-	const void *sp;
-	int z[1];
-
-	if (UNLIKELY((sp = tcbdbget3(cp->db, svtx, RTZ_VTXKEY_Z, z)) == NULL)) {
-		return (const_buf_t){0U};
-	}
-	return (const_buf_t){.z = (size_t)*z, .d = sp};
-}
-
-static rtz_buf_t
-get_name_r(rotz_t cp, rtz_vtxkey_t svtx)
-{
-	void *sp;
-	int z[1];
-
-	if (UNLIKELY((sp = tcbdbget(cp->db, svtx, RTZ_VTXKEY_Z, z)) == NULL)) {
-		return (rtz_buf_t){0U};
-	}
-	return (rtz_buf_t){.z = (size_t)*z, .d = sp};
 }
 
 /* API */
@@ -339,9 +358,11 @@ rotz_get_name(rotz_t ctx, rtz_vtx_t v)
 	rtz_vtxkey_t vkey = rtz_vtxkey(v);
 	const_buf_t buf;
 
-	if (UNLIKELY((buf = get_name(ctx, vkey)).d == NULL)) {
+	if (UNLIKELY((buf = get_aliases(ctx, vkey)).d == NULL)) {
 		return 0;
 	}
+	/* we're interested in the first name only */
+	buf.z = strlen(buf.d);
 	if (UNLIKELY(buf.z >= nmspcz)) {
 		nmspcz = ((buf.z / 64U) + 1U) * 64U;
 		nmspc = realloc(nmspc, nmspcz);
@@ -354,9 +375,7 @@ rotz_get_name(rotz_t ctx, rtz_vtx_t v)
 rtz_buf_t
 rotz_get_name_r(rotz_t ctx, rtz_vtx_t v)
 {
-	rtz_vtxkey_t vkey = rtz_vtxkey(v);
-
-	return get_name_r(ctx, vkey);
+	return get_name_r(ctx, rtz_vtxkey(v));
 }
 
 void
@@ -389,8 +408,7 @@ rotz_add_alias(rotz_t ctx, rtz_vtx_t v, const char *alias)
 		return -1;
 	}
 	/* check aliases */
-	akey = rtz_akakey(v);
-	if ((al = get_aliases(ctx, akey)).d != NULL &&
+	if ((al = get_aliases(ctx, akey = rtz_vtxkey(v))).d != NULL &&
 	    UNLIKELY(find_in_buf(al, alias, aliaz) != NULL)) {
 		/* alias is already in the list */
 		return 0;
@@ -415,7 +433,7 @@ rotz_rem_alias(rotz_t ctx, const char *alias)
 		return 0;
 	}
 	/* now remove that alias from the alias list */
-	if ((al = get_aliases(ctx, akey = rtz_akakey(aid))).d == NULL ||
+	if ((al = get_aliases(ctx, akey = rtz_vtxkey(aid))).d == NULL ||
 	    UNLIKELY((ap = find_in_buf(al, alias, aliaz)) == NULL)) {
 		/* alias is already removed innit? */
 		;
@@ -433,21 +451,7 @@ rotz_rem_alias(rotz_t ctx, const char *alias)
 rtz_buf_t
 rotz_get_aliases(rotz_t ctx, rtz_vtx_t v)
 {
-	rtz_vtxkey_t akey = rtz_akakey(v);
-	const_buf_t al;
-	char *d;
-
-	/* get edges under */
-	if (UNLIKELY((al = get_aliases(ctx, akey)).d == NULL)) {
-		return (rtz_buf_t){0U};
-	}
-	/* otherwise make a copy */
-	{
-		size_t mz = al.z * sizeof(*d);
-		d = malloc(mz);
-		memcpy(d, al.d, mz);
-	}
-	return (rtz_buf_t){.z = al.z, .d = d};
+	return get_aliases_r(ctx, rtz_vtxkey(v));
 }
 
 
