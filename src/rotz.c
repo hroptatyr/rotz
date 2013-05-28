@@ -86,7 +86,10 @@ free_rotz(rotz_t ctx)
 }
 
 
-/* vertex accessors */
+/* vertex accessors
+ * Our policy is that routines that know about tokyocabinet must not
+ * know about vertex keys, aka keys, and so forth.
+ * And vice versa. */
 typedef const unsigned char *rtz_vtxkey_t;
 #define RTZ_VTXPRE	"vtx"
 #define RTZ_VTXKEY_Z	(sizeof(RTZ_VTXPRE) + sizeof(rtz_vtx_t))
@@ -139,13 +142,15 @@ get_vertex(rotz_t cp, const char *v, size_t z)
 }
 
 static int
-put_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
+put_vertex(rotz_t cp, const char *a, size_t az, rtz_vtx_t v)
 {
-	rtz_vtxkey_t vkey = rtz_vtxkey(i);
+	return tcbdbaddint(cp->db, a, az, (int)v) - 1;
+}
 
-	if (tcbdbaddint(cp->db, v, z, (int)i) <= 0) {
-		return -1;
-	} else if (UNLIKELY(!tcbdbput(cp->db, vkey, RTZ_VTXKEY_Z, v, z))) {
+static int
+rnm_vertex(rotz_t cp, rtz_vtxkey_t vkey, const char *v, size_t z)
+{
+	if (UNLIKELY(!tcbdbput(cp->db, vkey, RTZ_VTXKEY_Z, v, z))) {
 		tcbdbout(cp->db, v, z);
 		return -1;
 	}
@@ -153,9 +158,18 @@ put_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 }
 
 static int
-rem_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
+add_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 {
-	rtz_vtxkey_t vkey = rtz_vtxkey(i);
+	if (UNLIKELY(put_vertex(cp, v, z, i) < 0)) {
+		return -1;
+	}
+	/* act as though we're renaming the vertex */
+	return rnm_vertex(cp, rtz_vtxkey(i), v, z);
+}
+
+static int
+rem_vertex(rotz_t cp, rtz_vtxkey_t vkey, const char *v, size_t z)
+{
 	bool x = true;
 
 	x &= tcbdbout(cp->db, v, z);
@@ -205,7 +219,7 @@ rotz_add_vertex(rotz_t ctx, const char *v)
 		;
 	} else if (UNLIKELY(!(res = next_id(ctx)))) {
 		;
-	} else if (UNLIKELY(put_vertex(ctx, v, z, res) < 0)) {
+	} else if (UNLIKELY(add_vertex(ctx, v, z, res) < 0)) {
 		res = 0U;
 	}
 	return res;
@@ -220,7 +234,7 @@ rotz_rem_vertex(rotz_t ctx, const char *v)
 	/* first check if V is really there, if not get an id and add that */
 	if (UNLIKELY(!(res = get_vertex(ctx, v, z)))) {
 		;
-	} else if (UNLIKELY(rem_vertex(ctx, v, z, res) < 0)) {
+	} else if (UNLIKELY(rem_vertex(ctx, rtz_vtxkey(res), v, z) < 0)) {
 		res = 0U;
 	}
 	return res;
