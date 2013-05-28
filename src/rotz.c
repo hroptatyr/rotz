@@ -225,26 +225,6 @@ unrnm_vertex(rotz_t cp, rtz_vtxkey_t vkey)
 }
 
 static int
-add_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
-{
-	if (UNLIKELY(put_vertex(cp, v, z, i) < 0)) {
-		return -1;
-	}
-	/* act as though we're renaming the vertex */
-	return rnm_vertex(cp, rtz_vtxkey(i), v, z);
-}
-
-static int
-rem_vertex(rotz_t cp, rtz_vtx_t i, const char *v, size_t z)
-{
-	int res = 0;
-
-	res += unput_vertex(cp, v, z);
-	res += unrnm_vertex(cp, rtz_vtxkey(i));
-	return res;
-}
-
-static int
 add_alias(rotz_t cp, rtz_vtxkey_t vkey, const char *a, size_t az)
 {
 	return tcbdbputcat(cp->db, vkey, RTZ_VTXKEY_Z, a, az + 1) - 1;
@@ -296,6 +276,39 @@ get_name_r(rotz_t cp, rtz_vtxkey_t svtx)
 	/* we're interested in the first name only */
 	cb.z = strlen(cb.d);
 	return (rtz_buf_t){.z = cb.z, .d = strndup(cb.d, cb.z)};
+}
+
+static int
+add_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
+{
+	if (UNLIKELY(put_vertex(cp, v, z, i) < 0)) {
+		return -1;
+	}
+	/* act as though we're renaming the vertex */
+	return rnm_vertex(cp, rtz_vtxkey(i), v, z);
+}
+
+static int
+rem_vertex(rotz_t cp, rtz_vtx_t i, const char *v, size_t z)
+{
+	rtz_vtxkey_t vkey = rtz_vtxkey(i);
+	const_buf_t al;
+	int res = 0;
+
+	/* get all them aliases */
+	if (LIKELY((al = get_aliases(cp, vkey)).d != NULL)) {
+		/* go through all names in the alias list */
+		for (const char *x = al.d, *const ex = al.d + al.z;
+		     x < ex; x += z + 1) {
+			z = strlen(x);
+			res += unput_vertex(cp, x, z);
+		}
+	} else {
+		/* just to be sure */
+		res += unput_vertex(cp, v, z);
+	}
+	res += unrnm_vertex(cp, rtz_vtxkey(i));
+	return res;
 }
 
 /* API */
