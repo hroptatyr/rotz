@@ -147,6 +147,36 @@ find_in_buf(const_buf_t b, const char *s, size_t z)
 	return NULL;
 }
 
+static const_buf_t
+rem_from_buf(const_buf_t b, const char *s, size_t z)
+{
+	static char *akaspc;
+	static size_t akaspz;
+	char *ap;
+
+	if (UNLIKELY(s < b.d || s + z > b.d + b.z)) {
+		/* definitely not in our array */
+		return b;
+	} else if (UNLIKELY(b.z > akaspz)) {
+		akaspz = ((b.z - 1) / 64U + 1U) * 64U;
+		akaspc = realloc(akaspc, akaspz);
+	}
+	/* S points to the element to delete */
+	ap = akaspc;
+	if (s > b.d) {
+		/* cpy the stuff before S */
+		memcpy(ap, b.d, (s - b.d));
+		ap += s - b.d;
+	}
+	if (s - b.d + z < b.z) {
+		/* cpy the stuff after S */
+		b.z -= s - b.d + z;
+		memcpy(ap, s + z, b.z);
+		ap += b.z;
+	}
+	return (const_buf_t){.z = ap - akaspc, .d = akaspc};
+}
+
 static rtz_vtx_t
 next_id(rotz_t cp)
 {
@@ -223,6 +253,17 @@ static int
 add_alias(rotz_t cp, rtz_vtxkey_t vkey, const char *a, size_t az)
 {
 	return tcbdbputcat(cp->db, vkey, RTZ_VTXKEY_Z, a, az + 1) - 1;
+}
+
+static int
+add_akalst(rotz_t ctx, rtz_vtxkey_t key, const_buf_t al)
+{
+	size_t z;
+
+	if (UNLIKELY((z = al.z * sizeof(*al.d)) == 0U)) {
+		return tcbdbout(ctx->db, key, RTZ_AKAKEY_Z) - 1;
+	}
+	return tcbdbput(ctx->db, key, RTZ_AKAKEY_Z, al.d, z) - 1;
 }
 
 #define get_aliases	get_name
@@ -359,6 +400,35 @@ rotz_add_alias(rotz_t ctx, rtz_vtx_t v, const char *alias)
 		return -1;
 	}
 	return 1;
+}
+
+int
+rotz_rem_alias(rotz_t ctx, const char *alias)
+{
+	size_t aliaz = strlen(alias);
+	const_buf_t al;
+	const char *ap;
+	rtz_vtxkey_t akey;
+	rtz_vtx_t aid;
+
+	/* first check if V is actually there */
+	if (!(aid = get_vertex(ctx, alias, aliaz))) {
+		/* nothing to be done */
+		return 0;
+	}
+	/* check aliases */
+	if ((al = get_aliases(ctx, akey = rtz_akakey(aid))).d == NULL ||
+	    UNLIKELY((ap = find_in_buf(al, alias, aliaz)) == NULL)) {
+		/* alias is already removed innit? */
+		return 0;
+	}
+	/* now remove that alias from the alias list */
+	if (UNLIKELY((al = rem_from_buf(al, ap, aliaz)).d == NULL)) {
+		/* huh? */
+		return -1;
+	}
+	add_akalst(ctx, akey, al);
+	return 0;
 }
 
 
