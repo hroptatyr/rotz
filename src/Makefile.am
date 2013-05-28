@@ -61,6 +61,39 @@ rotz_show_LDFLAGS += $(tokyocabinet_LIBS)
 rotz_show_LDADD = librotz.la
 BUILT_SOURCES += rotz-show-clo.c rotz-show-clo.h
 
+bin_PROGRAMS += rotz-alias
+rotz_alias_SOURCES = rotz-alias.c
+rotz_alias_SOURCES += rotz-cmd-api.h
+rotz_alias_SOURCES += rotz-alias-clo.h rotz-alias-clo.ggo
+rotz_alias_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
+rotz_alias_CPPFLAGS += $(tokyocabinet_CFLAGS)
+rotz_alias_LDFLAGS = $(AM_LDFLAGS)
+rotz_alias_LDFLAGS += $(tokyocabinet_LIBS)
+rotz_alias_LDADD = librotz.la
+BUILT_SOURCES += rotz-alias-clo.c rotz-alias-clo.h
+
+bin_PROGRAMS += rotz-combine
+rotz_combine_SOURCES = rotz-combine.c
+rotz_combine_SOURCES += rotz-cmd-api.h
+rotz_combine_SOURCES += rotz-combine-clo.h rotz-combine-clo.ggo
+rotz_combine_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
+rotz_combine_CPPFLAGS += $(tokyocabinet_CFLAGS)
+rotz_combine_LDFLAGS = $(AM_LDFLAGS)
+rotz_combine_LDFLAGS += $(tokyocabinet_LIBS)
+rotz_combine_LDADD = librotz.la
+BUILT_SOURCES += rotz-combine-clo.c rotz-combine-clo.h
+
+bin_PROGRAMS += rotz-rename
+rotz_rename_SOURCES = rotz-rename.c
+rotz_rename_SOURCES += rotz-cmd-api.h
+rotz_rename_SOURCES += rotz-rename-clo.h rotz-rename-clo.ggo
+rotz_rename_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
+rotz_rename_CPPFLAGS += $(tokyocabinet_CFLAGS)
+rotz_rename_LDFLAGS = $(AM_LDFLAGS)
+rotz_rename_LDFLAGS += $(tokyocabinet_LIBS)
+rotz_rename_LDADD = librotz.la
+BUILT_SOURCES += rotz-rename-clo.c rotz-rename-clo.h
+
 noinst_PROGRAMS += rotz-cloud
 rotz_cloud_SOURCES = rotz-cloud.c
 rotz_cloud_SOURCES += rotz-cmd-api.h
