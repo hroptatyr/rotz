@@ -93,6 +93,8 @@ free_rotz(rotz_t ctx)
 typedef const unsigned char *rtz_vtxkey_t;
 #define RTZ_VTXPRE	"vtx"
 #define RTZ_VTXKEY_Z	(sizeof(RTZ_VTXPRE) + sizeof(rtz_vtx_t))
+#define RTZ_AKAPRE	"aka"
+#define RTZ_AKAKEY_Z	(sizeof(RTZ_AKAPRE) + sizeof(rtz_vtx_t))
 
 typedef struct {
 	size_t z;
@@ -110,11 +112,39 @@ rtz_vtxkey(rtz_vtx_t vid)
 	return vtx;
 }
 
+static rtz_vtxkey_t
+rtz_akakey(rtz_vtx_t v)
+{
+/* return the key for the incidence list */
+	static unsigned char aka[RTZ_AKAKEY_Z] = RTZ_AKAPRE;
+	unsigned int *vi = (void*)(aka + sizeof(RTZ_AKAPRE));
+
+	*vi = v;
+	return aka;
+}
+
 static rtz_vtx_t
 rtz_vtx(rtz_vtxkey_t x)
 {
 	const unsigned int *vi = (const void*)(x + sizeof(RTZ_VTXPRE));
 	return *vi;
+}
+
+static const char*
+find_in_buf(const_buf_t b, const char *s, size_t z)
+{
+	/* include the final \nul in the needle search */
+	z++;
+
+	for (const char *sp;
+	     (sp = memmem(b.d, b.z, s, z)) != NULL;
+	     b.d += z, b.z -= z) {
+		/* make sure we don't find just a suffix */
+		if (sp == b.d || sp[-1] == '\0') {
+			return sp;
+		}
+	}
+	return NULL;
 }
 
 static rtz_vtx_t
@@ -176,6 +206,14 @@ rem_vertex(rotz_t cp, rtz_vtxkey_t vkey, const char *v, size_t z)
 	x &= tcbdbout(cp->db, vkey, RTZ_VTXKEY_Z);
 	return x - 1;
 }
+
+static int
+add_alias(rotz_t cp, rtz_vtxkey_t vkey, const char *a, size_t az)
+{
+	return tcbdbputcat(cp->db, vkey, RTZ_VTXKEY_Z, a, az + 1) - 1;
+}
+
+#define get_aliases	get_name
 
 static const_buf_t
 get_name(rotz_t cp, rtz_vtxkey_t svtx)
@@ -275,6 +313,40 @@ rotz_free_r(rtz_buf_t buf)
 		free(buf.d);
 	}
 	return;
+}
+
+int
+rotz_add_alias(rotz_t ctx, rtz_vtx_t v, const char *alias)
+{
+	size_t aliaz = strlen(alias);
+	const_buf_t al;
+	rtz_vtxkey_t akey;
+	rtz_vtx_t tmp;
+
+	/* first check if V is already there, if not get an id and add that */
+	if ((tmp = get_vertex(ctx, alias, aliaz)) && tmp == v) {
+		/* all good, the ID is already there */
+		return 0;
+	} else if (tmp) {
+		/* alias points to a different vertex already
+		 * we return -2 here to indicate this, so that callers that
+		 * meant to combine 2 tags can use rotz_combine() */
+		return -2;
+	}
+	/* check aliases */
+	akey = rtz_akakey(v);
+	if ((al = get_aliases(ctx, akey)).d != NULL &&
+	    UNLIKELY(find_in_buf(al, alias, aliaz) != NULL)) {
+		/* alias is already there */
+		return 0;
+	}
+	/* proceed with the insertion */
+	if (UNLIKELY(put_vertex(ctx, alias, aliaz, v) < 0)) {
+		return -1;
+	} else if (UNLIKELY(add_alias(ctx, akey, alias, aliaz) < 0)) {
+		return -1;
+	}
+	return 1;
 }
 
 

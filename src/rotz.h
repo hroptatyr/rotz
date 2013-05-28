@@ -88,6 +88,19 @@ extern rtz_buf_t rotz_get_name_r(rotz_t, rtz_vtx_t v);
 extern void rotz_free_r(rtz_buf_t);
 
 /**
+ * Make ALIAS an alias for V. */
+extern int rotz_add_alias(rotz_t, rtz_vtx_t v, const char *alias);
+
+/**
+ * Remove ALIAS from the list of aliases of V. */
+extern int rotz_rem_alias(rotz_t, const char *alias);
+
+/**
+ * Return the list of aliases of V. */
+extern rtz_buf_t rotz_get_aliases(rotz_t, rtz_vtx_t v);
+
+
+/**
  * Return >0 iff the edge from vertex FROM to vertex TO exists. */
 extern int rotz_get_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to);
 
