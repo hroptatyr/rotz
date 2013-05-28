@@ -86,10 +86,15 @@ free_rotz(rotz_t ctx)
 }
 
 
-/* vertex accessors */
+/* vertex accessors
+ * Our policy is that routines that know about tokyocabinet must not
+ * know about vertex keys, aka keys, and so forth.
+ * And vice versa. */
 typedef const unsigned char *rtz_vtxkey_t;
 #define RTZ_VTXPRE	"vtx"
 #define RTZ_VTXKEY_Z	(sizeof(RTZ_VTXPRE) + sizeof(rtz_vtx_t))
+#define RTZ_AKAPRE	"aka"
+#define RTZ_AKAKEY_Z	(sizeof(RTZ_AKAPRE) + sizeof(rtz_vtx_t))
 
 typedef struct {
 	size_t z;
@@ -107,11 +112,69 @@ rtz_vtxkey(rtz_vtx_t vid)
 	return vtx;
 }
 
+static rtz_vtxkey_t
+rtz_akakey(rtz_vtx_t v)
+{
+/* return the key for the incidence list */
+	static unsigned char aka[RTZ_AKAKEY_Z] = RTZ_AKAPRE;
+	unsigned int *vi = (void*)(aka + sizeof(RTZ_AKAPRE));
+
+	*vi = v;
+	return aka;
+}
+
 static rtz_vtx_t
 rtz_vtx(rtz_vtxkey_t x)
 {
 	const unsigned int *vi = (const void*)(x + sizeof(RTZ_VTXPRE));
 	return *vi;
+}
+
+static const char*
+find_in_buf(const_buf_t b, const char *s, size_t z)
+{
+	/* include the final \nul in the needle search */
+	z++;
+
+	for (const char *sp;
+	     (sp = memmem(b.d, b.z, s, z)) != NULL;
+	     b.d += z, b.z -= z) {
+		/* make sure we don't find just a suffix */
+		if (sp == b.d || sp[-1] == '\0') {
+			return sp;
+		}
+	}
+	return NULL;
+}
+
+static const_buf_t
+rem_from_buf(const_buf_t b, const char *s, size_t z)
+{
+	static char *akaspc;
+	static size_t akaspz;
+	char *ap;
+
+	if (UNLIKELY(s < b.d || s + z > b.d + b.z)) {
+		/* definitely not in our array */
+		return b;
+	} else if (UNLIKELY(b.z > akaspz)) {
+		akaspz = ((b.z - 1) / 64U + 1U) * 64U;
+		akaspc = realloc(akaspc, akaspz);
+	}
+	/* S points to the element to delete */
+	ap = akaspc;
+	if (s > b.d) {
+		/* cpy the stuff before S */
+		memcpy(ap, b.d, (s - b.d));
+		ap += s - b.d;
+	}
+	if (s - b.d + z < b.z) {
+		/* cpy the stuff after S */
+		b.z -= s - b.d + z;
+		memcpy(ap, s + z, b.z);
+		ap += b.z;
+	}
+	return (const_buf_t){.z = ap - akaspc, .d = akaspc};
 }
 
 static rtz_vtx_t
@@ -139,13 +202,15 @@ get_vertex(rotz_t cp, const char *v, size_t z)
 }
 
 static int
-put_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
+put_vertex(rotz_t cp, const char *a, size_t az, rtz_vtx_t v)
 {
-	rtz_vtxkey_t vkey = rtz_vtxkey(i);
+	return tcbdbaddint(cp->db, a, az, (int)v) - 1;
+}
 
-	if (tcbdbaddint(cp->db, v, z, (int)i) <= 0) {
-		return -1;
-	} else if (UNLIKELY(!tcbdbput(cp->db, vkey, RTZ_VTXKEY_Z, v, z))) {
+static int
+rnm_vertex(rotz_t cp, rtz_vtxkey_t vkey, const char *v, size_t z)
+{
+	if (UNLIKELY(!tcbdbput(cp->db, vkey, RTZ_VTXKEY_Z, v, z))) {
 		tcbdbout(cp->db, v, z);
 		return -1;
 	}
@@ -153,15 +218,55 @@ put_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 }
 
 static int
-rem_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
+unput_vertex(rotz_t cp, const char *v, size_t z)
 {
-	rtz_vtxkey_t vkey = rtz_vtxkey(i);
-	bool x = true;
-
-	x &= tcbdbout(cp->db, v, z);
-	x &= tcbdbout(cp->db, vkey, RTZ_VTXKEY_Z);
-	return x - 1;
+	return tcbdbout(cp->db, v, z) - 1;
 }
+
+static int
+unrnm_vertex(rotz_t cp, rtz_vtxkey_t vkey)
+{
+	return tcbdbout(cp->db, vkey, RTZ_VTXKEY_Z) - 1;
+}
+
+static int
+add_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
+{
+	if (UNLIKELY(put_vertex(cp, v, z, i) < 0)) {
+		return -1;
+	}
+	/* act as though we're renaming the vertex */
+	return rnm_vertex(cp, rtz_vtxkey(i), v, z);
+}
+
+static int
+rem_vertex(rotz_t cp, rtz_vtx_t i, const char *v, size_t z)
+{
+	int res = 0;
+
+	res += unput_vertex(cp, v, z);
+	res += unrnm_vertex(cp, rtz_vtxkey(i));
+	return res;
+}
+
+static int
+add_alias(rotz_t cp, rtz_vtxkey_t vkey, const char *a, size_t az)
+{
+	return tcbdbputcat(cp->db, vkey, RTZ_VTXKEY_Z, a, az + 1) - 1;
+}
+
+static int
+add_akalst(rotz_t ctx, rtz_vtxkey_t key, const_buf_t al)
+{
+	size_t z;
+
+	if (UNLIKELY((z = al.z * sizeof(*al.d)) == 0U)) {
+		return tcbdbout(ctx->db, key, RTZ_AKAKEY_Z) - 1;
+	}
+	return tcbdbput(ctx->db, key, RTZ_AKAKEY_Z, al.d, z) - 1;
+}
+
+#define get_aliases	get_name
 
 static const_buf_t
 get_name(rotz_t cp, rtz_vtxkey_t svtx)
@@ -205,7 +310,7 @@ rotz_add_vertex(rotz_t ctx, const char *v)
 		;
 	} else if (UNLIKELY(!(res = next_id(ctx)))) {
 		;
-	} else if (UNLIKELY(put_vertex(ctx, v, z, res) < 0)) {
+	} else if (UNLIKELY(add_vertex(ctx, v, z, res) < 0)) {
 		res = 0U;
 	}
 	return res;
@@ -220,7 +325,7 @@ rotz_rem_vertex(rotz_t ctx, const char *v)
 	/* first check if V is really there, if not get an id and add that */
 	if (UNLIKELY(!(res = get_vertex(ctx, v, z)))) {
 		;
-	} else if (UNLIKELY(rem_vertex(ctx, v, z, res) < 0)) {
+	} else if (UNLIKELY(rem_vertex(ctx, res, v, z) < 0)) {
 		res = 0U;
 	}
 	return res;
@@ -261,6 +366,88 @@ rotz_free_r(rtz_buf_t buf)
 		free(buf.d);
 	}
 	return;
+}
+
+int
+rotz_add_alias(rotz_t ctx, rtz_vtx_t v, const char *alias)
+{
+	size_t aliaz = strlen(alias);
+	const_buf_t al;
+	rtz_vtxkey_t akey;
+	rtz_vtx_t tmp;
+
+	/* first check if V is already there, if not get an id and add that */
+	if ((tmp = get_vertex(ctx, alias, aliaz)) && tmp != v) {
+		/* alias points to a different vertex already
+		 * we return -2 here to indicate this, so that callers that
+		 * meant to combine 2 tags can use rotz_combine() */
+		return -2;
+	} else if (UNLIKELY(tmp)) {
+		/* ah, tmp == v, don't bother putting it in again */
+		;
+	} else if (UNLIKELY(put_vertex(ctx, alias, aliaz, v) < 0)) {
+		return -1;
+	}
+	/* check aliases */
+	akey = rtz_akakey(v);
+	if ((al = get_aliases(ctx, akey)).d != NULL &&
+	    UNLIKELY(find_in_buf(al, alias, aliaz) != NULL)) {
+		/* alias is already in the list */
+		return 0;
+	} else if (UNLIKELY(add_alias(ctx, akey, alias, aliaz) < 0)) {
+		return -1;
+	}
+	return 1;
+}
+
+int
+rotz_rem_alias(rotz_t ctx, const char *alias)
+{
+	size_t aliaz = strlen(alias);
+	const_buf_t al;
+	const char *ap;
+	rtz_vtxkey_t akey;
+	rtz_vtx_t aid;
+
+	/* first check if V is actually there */
+	if (!(aid = get_vertex(ctx, alias, aliaz))) {
+		/* nothing to be done */
+		return 0;
+	}
+	/* now remove that alias from the alias list */
+	if ((al = get_aliases(ctx, akey = rtz_akakey(aid))).d == NULL ||
+	    UNLIKELY((ap = find_in_buf(al, alias, aliaz)) == NULL)) {
+		/* alias is already removed innit? */
+		;
+	} else if (UNLIKELY((al = rem_from_buf(al, ap, aliaz + 1)).d == NULL)) {
+		/* huh? */
+		return -1;
+	} else {
+		/* just reassing the list with the tag removed */
+		add_akalst(ctx, akey, al);
+	}
+	unput_vertex(ctx, alias, aliaz);
+	return 0;
+}
+
+rtz_buf_t
+rotz_get_aliases(rotz_t ctx, rtz_vtx_t v)
+{
+	rtz_vtxkey_t akey = rtz_akakey(v);
+	const_buf_t al;
+	char *d;
+
+	/* get edges under */
+	if (UNLIKELY((al = get_aliases(ctx, akey)).d == NULL)) {
+		return (rtz_buf_t){0U};
+	}
+	/* otherwise make a copy */
+	{
+		size_t mz = al.z * sizeof(*d);
+		d = malloc(mz);
+		memcpy(d, al.d, mz);
+	}
+	return (rtz_buf_t){.z = al.z, .d = d};
 }
 
 
@@ -459,7 +646,9 @@ rotz_rem_edge(rotz_t ctx, rtz_vtx_t from, rtz_vtx_t to)
 	return 1;
 }
 
-/* testing */
+
+/* iterators
+ * we can't keep the promise here to separate keys and tokyocabinet guts */
 void
 rotz_vtx_iter(rotz_t ctx, void(*cb)(rtz_vtx_t, const char*, void*), void *clo)
 {
