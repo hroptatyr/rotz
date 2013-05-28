@@ -414,18 +414,19 @@ rotz_rem_alias(rotz_t ctx, const char *alias)
 		/* nothing to be done */
 		return 0;
 	}
-	/* check aliases */
+	/* now remove that alias from the alias list */
 	if ((al = get_aliases(ctx, akey = rtz_akakey(aid))).d == NULL ||
 	    UNLIKELY((ap = find_in_buf(al, alias, aliaz)) == NULL)) {
 		/* alias is already removed innit? */
-		return 0;
-	}
-	/* now remove that alias from the alias list */
-	if (UNLIKELY((al = rem_from_buf(al, ap, aliaz + 1)).d == NULL)) {
+		;
+	} else if (UNLIKELY((al = rem_from_buf(al, ap, aliaz + 1)).d == NULL)) {
 		/* huh? */
 		return -1;
+	} else {
+		/* just reassing the list with the tag removed */
+		add_akalst(ctx, akey, al);
 	}
-	add_akalst(ctx, akey, al);
+	unput_vertex(ctx, alias, aliaz);
 	return 0;
 }
 
