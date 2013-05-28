@@ -429,6 +429,26 @@ rotz_rem_alias(rotz_t ctx, const char *alias)
 	return 0;
 }
 
+rtz_buf_t
+rotz_get_aliases(rotz_t ctx, rtz_vtx_t v)
+{
+	rtz_vtxkey_t akey = rtz_akakey(v);
+	const_buf_t al;
+	char *d;
+
+	/* get edges under */
+	if (UNLIKELY((al = get_aliases(ctx, akey)).d == NULL)) {
+		return (rtz_buf_t){0U};
+	}
+	/* otherwise make a copy */
+	{
+		size_t mz = al.z * sizeof(*d);
+		d = malloc(mz);
+		memcpy(d, al.d, mz);
+	}
+	return (rtz_buf_t){.z = al.z, .d = d};
+}
+
 
 /* edge accessors */
 typedef const unsigned char *rtz_edgkey_t;
