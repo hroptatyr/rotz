@@ -377,25 +377,23 @@ rotz_add_alias(rotz_t ctx, rtz_vtx_t v, const char *alias)
 	rtz_vtx_t tmp;
 
 	/* first check if V is already there, if not get an id and add that */
-	if ((tmp = get_vertex(ctx, alias, aliaz)) && tmp == v) {
-		/* all good, the ID is already there */
-		return 0;
-	} else if (tmp) {
+	if ((tmp = get_vertex(ctx, alias, aliaz)) && tmp != v) {
 		/* alias points to a different vertex already
 		 * we return -2 here to indicate this, so that callers that
 		 * meant to combine 2 tags can use rotz_combine() */
 		return -2;
+	} else if (UNLIKELY(tmp)) {
+		/* ah, tmp == v, don't bother putting it in again */
+		;
+	} else if (UNLIKELY(put_vertex(ctx, alias, aliaz, v) < 0)) {
+		return -1;
 	}
 	/* check aliases */
 	akey = rtz_akakey(v);
 	if ((al = get_aliases(ctx, akey)).d != NULL &&
 	    UNLIKELY(find_in_buf(al, alias, aliaz) != NULL)) {
-		/* alias is already there */
+		/* alias is already in the list */
 		return 0;
-	}
-	/* proceed with the insertion */
-	if (UNLIKELY(put_vertex(ctx, alias, aliaz, v) < 0)) {
-		return -1;
 	} else if (UNLIKELY(add_alias(ctx, akey, alias, aliaz) < 0)) {
 		return -1;
 	}
