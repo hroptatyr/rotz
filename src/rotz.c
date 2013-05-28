@@ -125,12 +125,6 @@ rtz_vtx(rtz_vtxkey_t x)
 	return *vi;
 }
 
-static inline __attribute__((pure, const)) bool
-akalstp(const_buf_t cb)
-{
-	return cb.d[cb.z - 1] == '\0';
-}
-
 static const char*
 find_in_buf(const_buf_t b, const char *s, size_t z)
 {
@@ -211,7 +205,7 @@ put_vertex(rotz_t cp, const char *a, size_t az, rtz_vtx_t v)
 static int
 rnm_vertex(rotz_t cp, rtz_vtxkey_t vkey, const char *v, size_t z)
 {
-	if (UNLIKELY(!tcbdbput(cp->db, vkey, RTZ_VTXKEY_Z, v, z))) {
+	if (UNLIKELY(!tcbdbput(cp->db, vkey, RTZ_VTXKEY_Z, v, z + 1))) {
 		tcbdbout(cp->db, v, z);
 		return -1;
 	}
@@ -298,10 +292,9 @@ get_name_r(rotz_t cp, rtz_vtxkey_t svtx)
 
 	if (UNLIKELY((cb = get_aliases(cp, svtx)).d == NULL)) {
 		return (rtz_buf_t){0U};
-	} else if (akalstp(cb)) {
-		/* oh, it's a aka-list, just hand out the first then */
-		cb.z = strlen(cb.d);
 	}
+	/* we're interested in the first name only */
+	cb.z = strlen(cb.d);
 	return (rtz_buf_t){.z = cb.z, .d = strndup(cb.d, cb.z)};
 }
 
@@ -354,10 +347,9 @@ rotz_get_name(rotz_t ctx, rtz_vtx_t v)
 
 	if (UNLIKELY((buf = get_aliases(ctx, vkey)).d == NULL)) {
 		return 0;
-	} else if (akalstp(buf)) {
-		/* oh, it's a aka-list, just copy the first then */
-		buf.z = strlen(buf.d);
 	}
+	/* we're interested in the first name only */
+	buf.z = strlen(buf.d);
 	if (UNLIKELY(buf.z >= nmspcz)) {
 		nmspcz = ((buf.z / 64U) + 1U) * 64U;
 		nmspc = realloc(nmspc, nmspcz);
