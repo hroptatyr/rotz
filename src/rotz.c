@@ -423,7 +423,7 @@ rotz_rem_alias(rotz_t ctx, const char *alias)
 		return 0;
 	}
 	/* now remove that alias from the alias list */
-	if (UNLIKELY((al = rem_from_buf(al, ap, aliaz)).d == NULL)) {
+	if (UNLIKELY((al = rem_from_buf(al, ap, aliaz + 1)).d == NULL)) {
 		/* huh? */
 		return -1;
 	}
