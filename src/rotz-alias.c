@@ -117,13 +117,20 @@ main(int argc, char *argv[])
 	if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
 		goto fini;
 	}
-	for (unsigned int i = 1; i < argi->inputs_num; i++) {
-		alias_tag(ctx, tid, argi->inputs[i]);
-	}
-	if (argi->inputs_num == 1 && isatty(STDIN_FILENO)) {
+	if (argi->inputs_num > 1 && !argi->delete_given) {
+		for (unsigned int i = 1; i < argi->inputs_num; i++) {
+			alias_tag(ctx, tid, argi->inputs[i]);
+		}
+	} else if (argi->delete_given) {
+		/* del tag */
+		rotz_rem_alias(ctx, tag);
+		for (unsigned int i = 1; i < argi->inputs_num; i++) {
+			rotz_rem_alias(ctx, rotz_tag(argi->inputs[i]));
+		}
+	} else if (isatty(STDIN_FILENO)) {
 		/* report aliases for TAG */
 		aliases(ctx, tid);
-	} else if (argi->inputs_num == 1) {
+	} else {
 		/* alias tags from stdin */
 		char *line = NULL;
 		size_t llen = 0U;

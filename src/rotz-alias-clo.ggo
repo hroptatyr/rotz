@@ -6,6 +6,10 @@ description "Make ALIAS an alias for TAG.
 If ALIAS is omitted on the command line, read aliases from stdin.
 if no aliases are present on stdin, show aliases for TAG."
 
+option "delete" d
+	"Delete alias TAG."
+	optional
+
 option "database" -
 	"Tagging service file or host, default: `rotz.tcb'"
 	string typestr="FILE|HOST" optional
