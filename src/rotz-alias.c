@@ -60,6 +60,20 @@ alias_tag(rotz_t ctx, rtz_vtx_t tid, const char *alias)
 	return;
 }
 
+static void
+aliases(rotz_t ctx, rtz_vtx_t tid)
+{
+	rtz_buf_t al;
+
+	al = rotz_get_aliases(ctx, tid);
+	for (const char *p = al.d, *const ep = al.d + al.z; p < ep;
+	     p += strlen(p) + 1/*for \nul*/) {
+		puts(p);
+	}
+	rotz_free_r(al);
+	return;
+}
+
 
 #if defined STANDALONE
 #if defined __INTEL_COMPILER
@@ -106,7 +120,10 @@ main(int argc, char *argv[])
 	for (unsigned int i = 1; i < argi->inputs_num; i++) {
 		alias_tag(ctx, tid, argi->inputs[i]);
 	}
-	if (argi->inputs_num == 1 && !isatty(STDIN_FILENO)) {
+	if (argi->inputs_num == 1 && isatty(STDIN_FILENO)) {
+		/* report aliases for TAG */
+		aliases(ctx, tid);
+	} else if (argi->inputs_num == 1) {
 		/* alias tags from stdin */
 		char *line = NULL;
 		size_t llen = 0U;
