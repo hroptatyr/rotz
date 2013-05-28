@@ -72,6 +72,17 @@ rotz_alias_LDFLAGS += $(tokyocabinet_LIBS)
 rotz_alias_LDADD = librotz.la
 BUILT_SOURCES += rotz-alias-clo.c rotz-alias-clo.h
 
+bin_PROGRAMS += rotz-combine
+rotz_combine_SOURCES = rotz-combine.c
+rotz_combine_SOURCES += rotz-cmd-api.h
+rotz_combine_SOURCES += rotz-combine-clo.h rotz-combine-clo.ggo
+rotz_combine_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
+rotz_combine_CPPFLAGS += $(tokyocabinet_CFLAGS)
+rotz_combine_LDFLAGS = $(AM_LDFLAGS)
+rotz_combine_LDFLAGS += $(tokyocabinet_LIBS)
+rotz_combine_LDADD = librotz.la
+BUILT_SOURCES += rotz-combine-clo.c rotz-combine-clo.h
+
 noinst_PROGRAMS += rotz-cloud
 rotz_cloud_SOURCES = rotz-cloud.c
 rotz_cloud_SOURCES += rotz-cmd-api.h

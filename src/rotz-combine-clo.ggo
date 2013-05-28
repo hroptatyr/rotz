@@ -1,0 +1,10 @@
+args "--unamed-opts --no-handle-error --long-help -a rotz_args_info -f rotz_parser"
+package "rotz-combine"
+usage "rotz-combine [OPTIONS...] [TAG]..."
+description "Combine TAGs into one, making them aliases of one another.
+
+If TAG is omitted, read tags to be combined from stdin."
+
+option "database" -
+	"Tagging service file or host, default: `rotz.tcb'"
+	string typestr="FILE|HOST" optional
