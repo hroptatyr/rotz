@@ -188,6 +188,18 @@ rnm_vertex(rotz_t cp, rtz_vtxkey_t vkey, const char *v, size_t z)
 }
 
 static int
+unput_vertex(rotz_t cp, const char *v, size_t z)
+{
+	return tcbdbout(cp->db, v, z) - 1;
+}
+
+static int
+unrnm_vertex(rotz_t cp, rtz_vtxkey_t vkey)
+{
+	return tcbdbout(cp->db, vkey, RTZ_VTXKEY_Z) - 1;
+}
+
+static int
 add_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 {
 	if (UNLIKELY(put_vertex(cp, v, z, i) < 0)) {
@@ -198,13 +210,13 @@ add_vertex(rotz_t cp, const char *v, size_t z, rtz_vtx_t i)
 }
 
 static int
-rem_vertex(rotz_t cp, rtz_vtxkey_t vkey, const char *v, size_t z)
+rem_vertex(rotz_t cp, rtz_vtx_t i, const char *v, size_t z)
 {
-	bool x = true;
+	int res = 0;
 
-	x &= tcbdbout(cp->db, v, z);
-	x &= tcbdbout(cp->db, vkey, RTZ_VTXKEY_Z);
-	return x - 1;
+	res += unput_vertex(cp, v, z);
+	res += unrnm_vertex(cp, rtz_vtxkey(i));
+	return res;
 }
 
 static int
@@ -272,7 +284,7 @@ rotz_rem_vertex(rotz_t ctx, const char *v)
 	/* first check if V is really there, if not get an id and add that */
 	if (UNLIKELY(!(res = get_vertex(ctx, v, z)))) {
 		;
-	} else if (UNLIKELY(rem_vertex(ctx, rtz_vtxkey(res), v, z) < 0)) {
+	} else if (UNLIKELY(rem_vertex(ctx, res, v, z) < 0)) {
 		res = 0U;
 	}
 	return res;
