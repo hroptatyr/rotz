@@ -94,4 +94,17 @@ rotz_sym(const char *sym)
 	return rotz_glue(RTZ_SYMSPC, sym, strlen(sym));
 }
 
+static inline __attribute__((pure, const)) const char*
+rotz_massage_name(const char *ts)
+{
+	if (UNLIKELY(ts == NULL)) {
+		;
+	} else if (!memcmp(ts, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
+		ts += RTZ_PRE_Z;
+	} else if (!memcmp(ts, RTZ_TAGSPC, sizeof(RTZ_TAGSPC) - 1) == 0) {
+		ts += RTZ_PRE_Z;
+	}
+	return ts;
+}
+
 #endif	/* INCLUDED_rotz_cmd_api_h_ */

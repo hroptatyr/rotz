@@ -66,15 +66,9 @@ prnt_vtxlst(rotz_t ctx, rtz_vtxlst_t el)
 	for (size_t j = 0; j < el.z; j++) {
 		const char *s = rotz_get_name(ctx, el.d[j]);
 
-		if (UNLIKELY(s == NULL)) {
+		if (UNLIKELY((s = rotz_massage_name(s)) == NULL)) {
 			/* uh oh */
 			continue;
-		} else if (!memcmp(s, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1)) {
-			/* aaah, a symbol */
-			s += RTZ_PRE_Z;
-		} else if (!memcmp(s, RTZ_TAGSPC, sizeof(RTZ_TAGSPC) - 1)) {
-			/* aaah, a tag */
-			s += RTZ_PRE_Z;
 		}
 		puts(s);
 	}
