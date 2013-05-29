@@ -681,4 +681,84 @@ rotz_vtx_iter(rotz_t ctx, void(*cb)(rtz_vtx_t, const char*, void*), void *clo)
 	return;
 }
 
+
+/* set opers */
+static rtz_vtxlst_t
+add_to_vtxlst(rtz_vtxlst_t el, rtz_vtx_t v)
+{
+	if (UNLIKELY(!(el.z % 64U))) {
+		size_t nu = (el.z + 64U) * sizeof(*el.d);
+		el.d = realloc(el.d, nu);
+	}
+	el.d[el.z++] = v;
+	return el;
+}
+
+static rtz_vtxlst_t
+vtxlst_union(rtz_vtxlst_t tgt, const_vtxlst_t el)
+{
+	const size_t tgtz = tgt.z;
+
+	for (size_t i = 0; i < el.z; i++) {
+		rtz_vtx_t item = el.d[i];
+
+		/* got this one? */
+		if (find_in_vtxlst((const_vtxlst_t){tgtz, tgt.d}, item)) {
+			continue;
+		}
+		tgt = add_to_vtxlst(tgt, item);
+	}
+	return tgt;
+}
+
+static rtz_vtxlst_t
+vtxlst_intersection(rtz_vtxlst_t tgt, const_vtxlst_t el)
+{
+	for (size_t i = 0; i < tgt.z; i++) {
+		/* got this one? */
+		if (find_in_vtxlst(el, tgt.d[i])) {
+			/* item can stay in tgt */
+			continue;
+		}
+		/* item must go, mark it for removal */
+		tgt.d[i] = 0U;
+	}
+	for (rtz_vtx_t *ip = tgt.d, *jp = tgt.d, *const ep = ip + tgt.z;
+	     ip < ep; ip++) {
+		if (*ip) {
+			if (LIKELY(jp < ip)) {
+				*jp = *ip;
+			}
+			tgt.z = ++jp - tgt.d;
+		}
+	}
+	return tgt;
+}
+
+rtz_vtxlst_t
+rotz_union(rotz_t cp, rtz_vtxlst_t x, rtz_vtx_t v)
+{
+	rtz_edgkey_t vkey = rtz_edgkey(v);
+	const_vtxlst_t el;
+
+	if (UNLIKELY((el = get_edges(cp, vkey)).d == NULL)) {
+		return x;
+	}
+	/* just add them one by one */
+	return vtxlst_union(x, el);
+}
+
+rtz_vtxlst_t
+rotz_intersection(rotz_t cp, rtz_vtxlst_t x, rtz_vtx_t v)
+{
+	rtz_edgkey_t vkey = rtz_edgkey(v);
+	const_vtxlst_t el;
+
+	if (UNLIKELY((el = get_edges(cp, vkey)).d == NULL)) {
+		return x;
+	}
+	/* just add them one by one */
+	return vtxlst_intersection(x, el);
+}
+
 /* rotz.c ends here */

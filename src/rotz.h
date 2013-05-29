@@ -131,4 +131,14 @@ extern int rotz_rem_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to);
 extern void
 rotz_vtx_iter(rotz_t, void(*cb)(rtz_vtx_t, const char*, void*), void *clo);
 
+
+/* set operations */
+/**
+ * Return the union of edges X and the edges of V. */
+extern rtz_vtxlst_t rotz_union(rotz_t, rtz_vtxlst_t x, rtz_vtx_t v);
+
+/**
+ * Return the intersection of edges X and the edges of V. */
+extern rtz_vtxlst_t rotz_intersection(rotz_t, rtz_vtxlst_t x, rtz_vtx_t v);
+
 #endif	/* INCLUDED_rotz_h_ */

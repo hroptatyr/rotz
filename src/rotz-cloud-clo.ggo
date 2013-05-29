@@ -6,3 +6,7 @@ description "Show all tags along with a count."
 option "database" -
 	"Tagging service file or host, default: `rotz.tcb'"
 	string typestr="FILE|HOST" optional
+
+option "top" -
+	"Only display the top N tags."
+	int typestr="N" optional
