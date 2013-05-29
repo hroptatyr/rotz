@@ -40,6 +40,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include <tcbdb.h>
 
 #include "rotz.h"
