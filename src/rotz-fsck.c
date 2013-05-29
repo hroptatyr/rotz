@@ -1,4 +1,4 @@
-/*** rotz-add.c -- rotz tag adder
+/*** rotz-fsck.c -- rotz tag fsck'er
  *
  * Copyright (C) 2013 Sebastian Freundt
  *
@@ -37,30 +37,48 @@
 #if defined HAVE_CONFIG_H
 # include "config.h"
 #endif	/* HAVE_CONFIG_H */
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <tcbdb.h>
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
 #include "nifty.h"
 
+struct rotz_s {
+	TCBDB *db;
+};
+
 
 static void
-add_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
+fixup_vtx(rotz_t ctx)
 {
-	const char *symspc_sym;
-	rtz_vtx_t sid;
+	BDBCUR *c = tcbdbcurnew(ctx->db);
+	
+	tcbdbcurjump(c, "vtx", sizeof("vtx"));
+	do {
+		char key[8];
+		int z[1];
+		const void *kp;
+		const void *vp;
 
-	if (UNLIKELY((symspc_sym = rotz_sym(sym)) == NULL)) {
-		return;
-	} else if (UNLIKELY((sid = rotz_add_vertex(ctx, symspc_sym)) == 0U)) {
-		return;
-	}
-	rotz_add_edge(ctx, tid, sid);
-	rotz_add_edge(ctx, sid, tid);
+		if (UNLIKELY((kp = tcbdbcurkey3(c, z)) == NULL) ||
+		    UNLIKELY(memcmp(kp, "vtx", sizeof("vtx")))) {
+			break;
+		}
+		memcpy(key, kp, *z);
+		if (UNLIKELY((vp = tcbdbcurval3(c, z)) == NULL) ||
+		    ((const char*)vp)[*z - 1] == '\0') {
+			continue;
+		}
+
+		/* otherwise has no \nul */
+		tcbdbputcat(ctx->db, key, sizeof(key), "", 1);
+
+	} while (tcbdbcurnext(c));
+	tcbdbcurdel(c);
 	return;
 }
 
@@ -69,8 +87,8 @@ add_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-add-clo.h"
-#include "rotz-add-clo.c"
+#include "rotz-fsck-clo.h"
+#include "rotz-fsck-clo.c"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */
@@ -79,18 +97,11 @@ int
 main(int argc, char *argv[])
 {
 	struct rotz_args_info argi[1];
-	rotz_t ctx;
 	const char *db = "rotz.tcb";
-	const char *tag;
-	rtz_vtx_t tid;
+	rotz_t ctx;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
-		res = 1;
-		goto out;
-	} else if (argi->inputs_num < 1) {
-		fputs("Error: no TAG argument specified\n\n", stderr);
-		rotz_parser_print_help();
 		res = 1;
 		goto out;
 	}
@@ -103,27 +114,9 @@ main(int argc, char *argv[])
 		res = 1;
 		goto out;
 	}
-	tag = rotz_tag(argi->inputs[0]);
-	if (UNLIKELY((tid = rotz_add_vertex(ctx, tag)) == 0U)) {
-		goto fini;
-	}
-	for (unsigned int i = 1; i < argi->inputs_num; i++) {
-		add_tag(ctx, tid, argi->inputs[i]);
-	}
-	if (argi->inputs_num == 1 && !isatty(STDIN_FILENO)) {
-		/* add tags from stdin */
-		char *line = NULL;
-		size_t llen = 0U;
-		ssize_t nrd;
 
-		while ((nrd = getline(&line, &llen, stdin)) > 0) {
-			line[nrd - 1] = '\0';
-			add_tag(ctx, tid, line);
-		}
-		free(line);
-	}
+	fixup_vtx(ctx);
 
-fini:
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
@@ -132,4 +125,4 @@ out:
 }
 #endif	/* STANDALONE */
 
-/* rotz-add.c ends here */
+/* rotz-fsck.c ends here */
