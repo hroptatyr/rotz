@@ -9,3 +9,12 @@ is returned."
 option "database" -
 	"Tagging service file or host, default: `rotz.tcb'"
 	string typestr="FILE|HOST" optional
+
+## just testing
+option "union" -
+	"Return a union of all given TAG/RSYM results."
+	optional
+
+option "intersection" -
+	"Return the intersection of all given TAG/RSYM results."
+	optional

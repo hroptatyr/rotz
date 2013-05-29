@@ -61,16 +61,10 @@ iter_cb(rtz_vtx_t UNUSED(vid), const char *vtx, void *UNUSED(clo))
 }
 
 static void
-show_tagsym(rotz_t ctx, rtz_vtx_t tsid)
+prnt_vtxlst(rotz_t ctx, rtz_vtxlst_t el)
 {
-/* show all syms associated with tag vertex TSID, or
- * all tags assoc'd with sym vertex TSID. */
-	rtz_vtxlst_t vl;
-
-	/* get all them edges and iterate */
-	vl = rotz_get_edges(ctx, tsid);
-	for (size_t j = 0; j < vl.z; j++) {
-		const char *s = rotz_get_name(ctx, vl.d[j]);
+	for (size_t j = 0; j < el.z; j++) {
+		const char *s = rotz_get_name(ctx, el.d[j]);
 
 		if (UNLIKELY(s == NULL)) {
 			/* uh oh */
@@ -84,6 +78,21 @@ show_tagsym(rotz_t ctx, rtz_vtx_t tsid)
 		}
 		puts(s);
 	}
+	return;
+}
+
+static void
+show_tagsym(rotz_t ctx, rtz_vtx_t tsid)
+{
+/* show all syms associated with tag vertex TSID, or
+ * all tags assoc'd with sym vertex TSID. */
+	rtz_vtxlst_t vl;
+
+	/* get all them edges and iterate */
+	vl = rotz_get_edges(ctx, tsid);
+
+	/* print it */
+	prnt_vtxlst(ctx, vl);
 
 	/* get ready for the next round */
 	rotz_free_vtxlst(vl);
@@ -107,6 +116,7 @@ main(int argc, char *argv[])
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
 	const char *db = "rotz.tcb";
+	rtz_vtxlst_t vl = {0U};
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -139,7 +149,20 @@ main(int argc, char *argv[])
 			continue;
 		}
 
-		show_tagsym(ctx, tsid);
+		if (argi->union_given) {
+			vl = rotz_union(ctx, vl, tsid);
+		} else if (argi->intersection_given) {
+			if (i > 0) {
+				vl = rotz_intersection(ctx, vl, tsid);
+			} else {
+				vl = rotz_get_edges(ctx, tsid);
+			}
+		} else {
+			show_tagsym(ctx, tsid);
+		}
+	}
+	if (argi->union_given || argi->intersection_given) {
+		prnt_vtxlst(ctx, vl);
 	}
 	if (argi->inputs_num == 0) {
 		/* show all tags mode */
