@@ -94,7 +94,7 @@ rotz_rename_LDFLAGS += $(tokyocabinet_LIBS)
 rotz_rename_LDADD = librotz.la
 BUILT_SOURCES += rotz-rename-clo.c rotz-rename-clo.h
 
-noinst_PROGRAMS += rotz-cloud
+bin_PROGRAMS += rotz-cloud
 rotz_cloud_SOURCES = rotz-cloud.c
 rotz_cloud_SOURCES += rotz-cmd-api.h
 rotz_cloud_SOURCES += rotz-cloud-clo.h rotz-cloud-clo.ggo
