@@ -729,7 +729,7 @@ vtxlst_intersection(rtz_vtxlst_t tgt, const_vtxlst_t el)
 			if (LIKELY(jp < ip)) {
 				*jp = *ip;
 			}
-			jp++;
+			tgt.z = ++jp - tgt.d;
 		}
 	}
 	return tgt;
