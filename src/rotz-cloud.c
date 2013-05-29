@@ -53,6 +53,12 @@ struct iter_clo_s {
 		size_t z;
 		const char *d;
 	} pre;
+
+	size_t ntop;
+	struct {
+		char *sym;
+		size_t cnt;
+	} *top;
 };
 
 
@@ -69,16 +75,43 @@ iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 		vtx += RTZ_PRE_Z;
 	}
 
-	if (cp && memcmp(vtx, cp->pre.d, cp->pre.z)) {
+	if (cp->pre.d && memcmp(vtx, cp->pre.d, cp->pre.z)) {
 		/* not matching prefix */
 		return;
 	}
 
 	el = rotz_get_edges(ctx, vid);
-	fputs(vtx, stdout);
-	fputc('\t', stdout);
-	fprintf(stdout, "%zu\n", el.z);
+	if (!cp->ntop) {
+		fputs(vtx, stdout);
+		fputc('\t', stdout);
+		fprintf(stdout, "%zu\n", el.z);
+	} else if (el.z >= cp->top[0].cnt) {
+		size_t pos;
+
+		for (pos = 1; pos < cp->ntop && el.z >= cp->top[pos].cnt; pos++);
+
+		/* pos - 1 is the position to insert to */
+		if (cp->top[0].sym != NULL) {
+			free(cp->top[0].sym);
+		}
+		memmove(cp->top, cp->top + 1, pos * sizeof(*cp->top));
+		cp->top[pos].sym = strdup(vtx);
+		cp->top[pos].cnt = el.z;
+	}
 	rotz_free_vtxlst(el);
+	return;
+}
+
+static void
+prnt_top(const struct iter_clo_s *cp)
+{
+	for (size_t i = cp->ntop; i-- > 0 && cp->top[i].sym != NULL;) {
+		fputs(cp->top[i].sym, stdout);
+		fputc('\t', stdout);
+		fprintf(stdout, "%zu\n", cp->top[i].cnt);
+		/* also free the whole shebang */
+		free(cp->top[i].sym);
+	}
 	return;
 }
 
@@ -96,10 +129,9 @@ iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 int
 main(int argc, char *argv[])
 {
-	static struct iter_clo_s iclo;
+	static struct iter_clo_s clo[1];
 	struct rotz_args_info argi[1];
 	const char *db = "rotz.tcb";
-	struct iter_clo_s *icp = NULL;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -118,11 +150,17 @@ main(int argc, char *argv[])
 
 	/* cloud all tags mode, undocumented prefix feature */
 	if (argi->inputs_num) {
-		iclo.pre.z = strlen(argi->inputs[0]);
-		iclo.pre.d = argi->inputs[0];
-		icp = &iclo;
+		clo->pre.z = strlen(argi->inputs[0]);
+		clo->pre.d = argi->inputs[0];
 	}
-	rotz_vtx_iter(ctx, iter_cb, icp);
+	if (argi->top_given) {
+		clo->ntop = argi->top_arg;
+		clo->top = calloc(clo->ntop, sizeof(*clo->top));
+	}
+	rotz_vtx_iter(ctx, iter_cb, clo);
+	if (argi->top_given) {
+		prnt_top(clo);
+	}
 
 	/* big resource freeing */
 	free_rotz(ctx);
