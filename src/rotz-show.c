@@ -65,12 +65,21 @@ prnt_vtxlst(rotz_t ctx, rtz_vtxlst_t el)
 {
 	for (size_t j = 0; j < el.z; j++) {
 		const char *s = rotz_get_name(ctx, el.d[j]);
+		puts(rotz_massage_name(s));
+	}
+	return;
+}
 
-		if (UNLIKELY((s = rotz_massage_name(s)) == NULL)) {
-			/* uh oh */
-			continue;
-		}
-		puts(s);
+static void
+prnt_wtxlst(rotz_t ctx, rtz_wtxlst_t wl)
+{
+	/* quick service */
+
+	for (size_t j = 0; j < wl.z; j++) {
+		const char *s = rotz_get_name(ctx, wl.d[j]);
+		fputs(rotz_massage_name(s), stdout);
+		fputc('\t', stdout);
+		fprintf(stdout, "%u\n", ++wl.w[j]);
 	}
 	return;
 }
@@ -110,7 +119,10 @@ main(int argc, char *argv[])
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
 	const char *db = "rotz.tcb";
-	rtz_vtxlst_t vl = {0U};
+	union {
+		rtz_vtxlst_t vl;
+		rtz_wtxlst_t wl;
+	} r = {0U};
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -144,19 +156,23 @@ main(int argc, char *argv[])
 		}
 
 		if (argi->union_given) {
-			vl = rotz_union(ctx, vl, tsid);
+			r.vl = rotz_union(ctx, r.vl, tsid);
+		} else if (argi->munion_given) {
+			r.wl = rotz_munion(ctx, r.wl, tsid);
 		} else if (argi->intersection_given) {
 			if (i > 0) {
-				vl = rotz_intersection(ctx, vl, tsid);
+				r.vl = rotz_intersection(ctx, r.vl, tsid);
 			} else {
-				vl = rotz_get_edges(ctx, tsid);
+				r.vl = rotz_get_edges(ctx, tsid);
 			}
 		} else {
 			show_tagsym(ctx, tsid);
 		}
 	}
 	if (argi->union_given || argi->intersection_given) {
-		prnt_vtxlst(ctx, vl);
+		prnt_vtxlst(ctx, r.vl);
+	} else if (argi->munion_given) {
+		prnt_wtxlst(ctx, r.wl);
 	}
 	if (argi->inputs_num == 0) {
 		/* show all tags mode */
