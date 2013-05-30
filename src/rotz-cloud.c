@@ -67,10 +67,9 @@ iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
 		/* that's a symbol, vtx would be a tag then */
 		return;
-	} else if (memcmp(vtx, RTZ_TAGSPC, sizeof(RTZ_TAGSPC) - 1) == 0) {
-		vtx += RTZ_PRE_Z;
 	}
 
+	vtx = rotz_massage_name(vtx);
 	if (cp->pre.d && memcmp(vtx, cp->pre.d, cp->pre.z)) {
 		/* not matching prefix */
 		return;
@@ -102,7 +101,7 @@ prnt_top(const struct iter_clo_s *cp)
 {
 	for (size_t i = cp->wl.z; i-- > 0 && cp->wl.d[i];) {
 		const char *sym = rotz_get_name(ctx, cp->wl.d[i]);
-		fputs(sym, stdout);
+		fputs(rotz_massage_name(sym), stdout);
 		fputc('\t', stdout);
 		fprintf(stdout, "%u\n", cp->wl.w[i]);
 	}

@@ -99,9 +99,9 @@ rotz_massage_name(const char *ts)
 {
 	if (UNLIKELY(ts == NULL)) {
 		;
-	} else if (!memcmp(ts, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
+	} else if (memcmp(ts, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
 		ts += RTZ_PRE_Z;
-	} else if (!memcmp(ts, RTZ_TAGSPC, sizeof(RTZ_TAGSPC) - 1) == 0) {
+	} else if (memcmp(ts, RTZ_TAGSPC, sizeof(RTZ_TAGSPC) - 1) == 0) {
 		ts += RTZ_PRE_Z;
 	}
 	return ts;
