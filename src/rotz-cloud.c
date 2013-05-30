@@ -54,11 +54,7 @@ struct iter_clo_s {
 		const char *d;
 	} pre;
 
-	size_t ntop;
-	struct {
-		char *sym;
-		size_t cnt;
-	} *top;
+	rtz_wtxlst_t wl;
 };
 
 
@@ -81,22 +77,21 @@ iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 	}
 
 	el = rotz_get_edges(ctx, vid);
-	if (!cp->ntop) {
+	if (!cp->wl.z) {
 		fputs(vtx, stdout);
 		fputc('\t', stdout);
 		fprintf(stdout, "%zu\n", el.z);
-	} else if (el.z >= cp->top[0].cnt) {
+	} else if (el.z >= cp->wl.w[0]) {
 		size_t pos;
 
-		for (pos = 1; pos < cp->ntop && el.z >= cp->top[pos].cnt; pos++);
+		for (pos = 1; pos < cp->wl.z && el.z >= cp->wl.w[pos]; pos++);
 
 		/* pos - 1 is the position to insert to */
-		if (cp->top[0].sym != NULL) {
-			free(cp->top[0].sym);
-		}
-		memmove(cp->top, cp->top + 1, pos * sizeof(*cp->top));
-		cp->top[pos].sym = strdup(vtx);
-		cp->top[pos].cnt = el.z;
+		pos--;
+		memmove(cp->wl.d, cp->wl.d + 1, pos * sizeof(*cp->wl.d));
+		memmove(cp->wl.w, cp->wl.w + 1, pos * sizeof(*cp->wl.w));
+		cp->wl.d[pos] = vid;
+		cp->wl.w[pos] = el.z;
 	}
 	rotz_free_vtxlst(el);
 	return;
@@ -105,12 +100,11 @@ iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 static void
 prnt_top(const struct iter_clo_s *cp)
 {
-	for (size_t i = cp->ntop; i-- > 0 && cp->top[i].sym != NULL;) {
-		fputs(cp->top[i].sym, stdout);
+	for (size_t i = cp->wl.z; i-- > 0 && cp->wl.d[i];) {
+		const char *sym = rotz_get_name(ctx, cp->wl.d[i]);
+		fputs(sym, stdout);
 		fputc('\t', stdout);
-		fprintf(stdout, "%zu\n", cp->top[i].cnt);
-		/* also free the whole shebang */
-		free(cp->top[i].sym);
+		fprintf(stdout, "%u\n", cp->wl.w[i]);
 	}
 	return;
 }
@@ -154,8 +148,9 @@ main(int argc, char *argv[])
 		clo->pre.d = argi->inputs[0];
 	}
 	if (argi->top_given) {
-		clo->ntop = argi->top_arg;
-		clo->top = calloc(clo->ntop, sizeof(*clo->top));
+		clo->wl.z = argi->top_arg;
+		clo->wl.d = calloc(clo->wl.z, sizeof(*clo->wl.d));
+		clo->wl.w = calloc(clo->wl.z, sizeof(*clo->wl.w));
 	}
 	rotz_vtx_iter(ctx, iter_cb, clo);
 	if (argi->top_given) {
