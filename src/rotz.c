@@ -700,7 +700,9 @@ add_to_vtxlst(rtz_vtxlst_t el, rtz_vtx_t v)
 {
 	if (UNLIKELY(!(el.z % 64U))) {
 		size_t nu = (el.z + 64U) * sizeof(*el.d);
+
 		el.d = realloc(el.d, nu);
+		memset(el.d + el.z, 0, 64U * sizeof(*el.d));
 	}
 	el.d[el.z++] = v;
 	return el;
@@ -710,9 +712,15 @@ static rtz_wtxlst_t
 add_to_wtxlst(rtz_wtxlst_t wl, rtz_vtx_t v)
 {
 	if (UNLIKELY(!(wl.z % 64U))) {
-		size_t nu = (wl.z + 64U) * sizeof(*wl.d);
+		size_t nu;
+
+		nu = (wl.z + 64U) * sizeof(*wl.d);
 		wl.d = realloc(wl.d, nu);
+		memset(wl.d + wl.z, 0, 64U * sizeof(*wl.d));
+
+		nu = (wl.z + 64U) * sizeof(*wl.w);
 		wl.w = realloc(wl.w, nu);
+		memset(wl.w + wl.z, 0, 64U * sizeof(*wl.w));
 	}
 	wl.d[wl.z++] = v;
 	return wl;
