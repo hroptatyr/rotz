@@ -65,12 +65,21 @@ prnt_vtxlst(rotz_t ctx, rtz_vtxlst_t el)
 {
 	for (size_t j = 0; j < el.z; j++) {
 		const char *s = rotz_get_name(ctx, el.d[j]);
+		puts(rotz_massage_name(s));
+	}
+	return;
+}
 
-		if (UNLIKELY((s = rotz_massage_name(s)) == NULL)) {
-			/* uh oh */
-			continue;
-		}
-		puts(s);
+static void
+prnt_wtxlst(rotz_t ctx, rtz_wtxlst_t wl)
+{
+	/* quick service */
+
+	for (size_t j = 0; j < wl.z; j++) {
+		const char *s = rotz_get_name(ctx, wl.d[j]);
+		fputs(rotz_massage_name(s), stdout);
+		fputc('\t', stdout);
+		fprintf(stdout, "%u\n", ++wl.w[j]);
 	}
 	return;
 }
@@ -93,6 +102,47 @@ show_tagsym(rotz_t ctx, rtz_vtx_t tsid)
 	return;
 }
 
+static inline void
+shsort_gap(rtz_wtxlst_t wl, unsigned int gap)
+{
+	for (size_t i = gap; i < wl.z; i++) {
+		unsigned int wi = wl.w[i];
+		unsigned int di = wl.d[i];
+		unsigned int j;
+
+		for (j = i; j >= gap && wi > wl.w[j - gap]; j -= gap) {
+			wl.w[j] = wl.w[j - gap];
+			wl.d[j] = wl.d[j - gap];
+		}
+		wl.w[j] = wi;
+		wl.d[j] = di;
+	}
+	return;
+}
+
+static void
+shsort(rtz_wtxlst_t wl)
+{
+	/* Ciura's gap sequence */
+	static const unsigned int gaps[] = {
+		701U, 301U, 132U, 57U, 23U, 10U, 4U, 1U
+	};
+	unsigned int h = gaps[0];
+
+	/* extending the gap sequence by h_k <- 2.25h_{k-1} */
+	for (unsigned int nx;
+	     (nx = (unsigned int)(2.25 * (float)h)) < wl.z; h = nx);
+	/* first go through the extended list */
+	for (; h > gaps[0]; h = (unsigned int)((float)h / 2.25)) {
+		shsort_gap(wl, h);
+	}
+	/* then resort to Ciura's list */
+	for (size_t i = 0; i < countof(gaps); i++) {
+		shsort_gap(wl, gaps[i]);
+	}
+	return;
+}
+
 
 #if defined STANDALONE
 #if defined __INTEL_COMPILER
@@ -110,7 +160,10 @@ main(int argc, char *argv[])
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
 	const char *db = "rotz.tcb";
-	rtz_vtxlst_t vl = {0U};
+	union {
+		rtz_vtxlst_t vl;
+		rtz_wtxlst_t wl;
+	} r = {0U};
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -144,19 +197,25 @@ main(int argc, char *argv[])
 		}
 
 		if (argi->union_given) {
-			vl = rotz_union(ctx, vl, tsid);
+			r.vl = rotz_union(ctx, r.vl, tsid);
+		} else if (argi->munion_given) {
+			r.wl = rotz_munion(ctx, r.wl, tsid);
 		} else if (argi->intersection_given) {
 			if (i > 0) {
-				vl = rotz_intersection(ctx, vl, tsid);
+				r.vl = rotz_intersection(ctx, r.vl, tsid);
 			} else {
-				vl = rotz_get_edges(ctx, tsid);
+				r.vl = rotz_get_edges(ctx, tsid);
 			}
 		} else {
 			show_tagsym(ctx, tsid);
 		}
 	}
 	if (argi->union_given || argi->intersection_given) {
-		prnt_vtxlst(ctx, vl);
+		prnt_vtxlst(ctx, r.vl);
+	} else if (argi->munion_given) {
+		/* quick service, sort r.wl, could be an option */
+		shsort(r.wl);
+		prnt_wtxlst(ctx, r.wl);
 	}
 	if (argi->inputs_num == 0) {
 		/* show all tags mode */
