@@ -18,3 +18,7 @@ option "union" -
 option "intersection" -
 	"Return the intersection of all given TAG/RSYM results."
 	optional
+
+option "munion" -
+	"Return a union with multiplicity of all given TAG/RSYM results."
+	optional

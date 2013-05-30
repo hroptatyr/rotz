@@ -611,6 +611,18 @@ rotz_free_vtxlst(rtz_vtxlst_t el)
 	return;
 }
 
+void
+rotz_free_wtxlst(rtz_wtxlst_t wl)
+{
+	if (LIKELY(wl.d != NULL)) {
+		free(wl.d);
+	}
+	if (LIKELY(wl.w != NULL)) {
+		free(wl.w);
+	}
+	return;
+}
+
 int
 rotz_add_edge(rotz_t ctx, rtz_vtx_t from, rtz_vtx_t to)
 {
@@ -688,10 +700,30 @@ add_to_vtxlst(rtz_vtxlst_t el, rtz_vtx_t v)
 {
 	if (UNLIKELY(!(el.z % 64U))) {
 		size_t nu = (el.z + 64U) * sizeof(*el.d);
+
 		el.d = realloc(el.d, nu);
+		memset(el.d + el.z, 0, 64U * sizeof(*el.d));
 	}
 	el.d[el.z++] = v;
 	return el;
+}
+
+static rtz_wtxlst_t
+add_to_wtxlst(rtz_wtxlst_t wl, rtz_vtx_t v)
+{
+	if (UNLIKELY(!(wl.z % 64U))) {
+		size_t nu;
+
+		nu = (wl.z + 64U) * sizeof(*wl.d);
+		wl.d = realloc(wl.d, nu);
+		memset(wl.d + wl.z, 0, 64U * sizeof(*wl.d));
+
+		nu = (wl.z + 64U) * sizeof(*wl.w);
+		wl.w = realloc(wl.w, nu);
+		memset(wl.w + wl.z, 0, 64U * sizeof(*wl.w));
+	}
+	wl.d[wl.z++] = v;
+	return wl;
 }
 
 static rtz_vtxlst_t
@@ -707,6 +739,26 @@ vtxlst_union(rtz_vtxlst_t tgt, const_vtxlst_t el)
 			continue;
 		}
 		tgt = add_to_vtxlst(tgt, item);
+	}
+	return tgt;
+}
+
+static rtz_wtxlst_t
+wtxlst_union(rtz_wtxlst_t tgt, const_vtxlst_t el)
+{
+	const size_t tgtz = tgt.z;
+
+	for (size_t i = 0; i < el.z; i++) {
+		rtz_vtx_t item = el.d[i];
+		size_t p;
+
+		/* got this one? */
+		if ((p = find_in_vtxlst((const_vtxlst_t){tgtz, tgt.d}, item))) {
+			/* add 1 in the weight vector then */
+			tgt.w[p - 1]++;
+			continue;
+		}
+		tgt = add_to_wtxlst(tgt, item);
 	}
 	return tgt;
 }
@@ -759,6 +811,19 @@ rotz_intersection(rotz_t cp, rtz_vtxlst_t x, rtz_vtx_t v)
 	}
 	/* just add them one by one */
 	return vtxlst_intersection(x, el);
+}
+
+rtz_wtxlst_t
+rotz_munion(rotz_t cp, rtz_wtxlst_t x, rtz_vtx_t v)
+{
+	rtz_edgkey_t vkey = rtz_edgkey(v);
+	const_vtxlst_t el;
+
+	if (UNLIKELY((el = get_edges(cp, vkey)).d == NULL)) {
+		return x;
+	}
+	/* just add them one by one */
+	return wtxlst_union(x, el);
 }
 
 /* rotz.c ends here */

@@ -50,6 +50,12 @@ typedef struct {
 
 typedef struct {
 	size_t z;
+	rtz_vtx_t *d;
+	unsigned int *w;
+} rtz_wtxlst_t;
+
+typedef struct {
+	size_t z;
 	char *d;
 } rtz_buf_t;
 
@@ -117,6 +123,10 @@ extern int rotz_rem_edges(rotz_t, rtz_vtx_t vid);
 extern void rotz_free_vtxlst(rtz_vtxlst_t);
 
 /**
+ * Free up weighted edge list resources. */
+extern void rotz_free_wtxlst(rtz_wtxlst_t);
+
+/**
  * Add an edge from vertex FROM to vertex TO. */
 extern int rotz_add_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to);
 
@@ -140,5 +150,10 @@ extern rtz_vtxlst_t rotz_union(rotz_t, rtz_vtxlst_t x, rtz_vtx_t v);
 /**
  * Return the intersection of edges X and the edges of V. */
 extern rtz_vtxlst_t rotz_intersection(rotz_t, rtz_vtxlst_t x, rtz_vtx_t v);
+
+/**
+ * Return the union of edges X and the edges of V along with counts.
+ * For every */
+extern rtz_wtxlst_t rotz_munion(rotz_t, rtz_wtxlst_t x, rtz_vtx_t v);
 
 #endif	/* INCLUDED_rotz_h_ */
