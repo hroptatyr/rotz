@@ -102,7 +102,7 @@ prnt_top(const struct iter_clo_s *cp)
 {
 	for (size_t i = cp->wl.z; i-- > 0 && cp->wl.d[i];) {
 		const char *sym = rotz_get_name(ctx, cp->wl.d[i]);
-		fputs(sym, stdout);
+		fputs(rotz_massage_name(sym), stdout);
 		fputc('\t', stdout);
 		fprintf(stdout, "%u\n", cp->wl.w[i]);
 	}
