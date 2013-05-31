@@ -193,13 +193,15 @@ next_id(rotz_t cp)
 static rtz_vtx_t
 get_vertex(rotz_t cp, const char *v, size_t z)
 {
-	int res;
+	const int *rp;
+	int rz[1];
 
-	if (UNLIKELY((res = tcbdbaddint(cp->db, v, z, 0)) <= 0)) {
-		tcbdbout(cp->db, v, z);
+	if (UNLIKELY((rp = tcbdbget3(cp->db, v, z, rz)) == NULL)) {
+		return 0U;
+	} else if (UNLIKELY(*rz != sizeof(*rp))) {
 		return 0U;
 	}
-	return (rtz_vtx_t)res;
+	return (rtz_vtx_t)*rp;
 }
 
 static int
