@@ -61,7 +61,7 @@ typedef struct {
 
 
 /* lower level graph api */
-extern rotz_t make_rotz(const char *dbfile);
+extern rotz_t make_rotz(const char *dbfile, ...);
 extern void free_rotz(rotz_t);
 
 /**
@@ -113,6 +113,10 @@ extern int rotz_get_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to);
 /**
  * Return (outgoing) edges from a vertex VID. */
 extern rtz_vtxlst_t rotz_get_edges(rotz_t, rtz_vtx_t vid);
+
+/**
+ * Return the number of (outgoing) edges from a vertex VID. */
+extern size_t rotz_get_nedges(rotz_t, rtz_vtx_t vid);
 
 /**
  * Delete (outgoing) edges from a vertex VID. */

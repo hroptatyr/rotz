@@ -1,4 +1,4 @@
-/*** rotz-fsck.c -- rotz tag fsck'er
+/*** rotz-search.c -- rotz tag search
  *
  * Copyright (C) 2013 Sebastian Freundt
  *
@@ -42,7 +42,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <tcbdb.h>
-#include <fcntl.h>
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
@@ -52,33 +51,45 @@ struct rotz_s {
 	TCBDB *db;
 };
 
+struct iter_clo_s {
+	struct {
+		size_t z;
+		const char *d;
+	} pre;
+
+	size_t ntop;
+	unsigned int show_numbers;
+};
+
 
 static void
-fixup_vtx(rotz_t ctx)
+iter(rotz_t ctx, const struct iter_clo_s *clo)
 {
+	static size_t iter;
 	BDBCUR *c = tcbdbcurnew(ctx->db);
-	
-	tcbdbcurjump(c, "vtx", sizeof("vtx"));
+
+	tcbdbcurjump(c, clo->pre.d, clo->pre.z);
+	iter = 0;
 	do {
-		char key[8];
 		int z[1];
 		const void *kp;
-		const void *vp;
 
 		if (UNLIKELY((kp = tcbdbcurkey3(c, z)) == NULL) ||
-		    UNLIKELY(memcmp(kp, "vtx", sizeof("vtx")))) {
+		    UNLIKELY(memcmp(kp, clo->pre.d, clo->pre.z))) {
 			break;
 		}
-		memcpy(key, kp, *z);
-		if (UNLIKELY((vp = tcbdbcurval3(c, z)) == NULL) ||
-		    ((const char*)vp)[*z - 1] == '\0') {
-			continue;
+		/* just print the name and stats */
+		fputs(rotz_massage_name(kp), stdout);
+		if (clo->show_numbers) {
+			/* get the number also */
+			const rtz_vtx_t *vp = tcbdbcurval3(c, z);
+			fputc('\t', stdout);
+			fprintf(stdout, "%zu", rotz_get_nedges(ctx, *vp));
 		}
-
-		/* otherwise has no \nul */
-		tcbdbputcat(ctx->db, key, sizeof(key), "", 1);
-
+		fputc('\n', stdout);
+		iter++;
 	} while (tcbdbcurnext(c));
+
 	tcbdbcurdel(c);
 	return;
 }
@@ -88,8 +99,8 @@ fixup_vtx(rotz_t ctx)
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-fsck-clo.h"
-#include "rotz-fsck-clo.c"
+#include "rotz-search-clo.h"
+#include "rotz-search-clo.c"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */
@@ -97,6 +108,7 @@ fixup_vtx(rotz_t ctx)
 int
 main(int argc, char *argv[])
 {
+	static struct iter_clo_s clo[1];
 	struct rotz_args_info argi[1];
 	const char *db = "rotz.tcb";
 	rotz_t ctx;
@@ -105,18 +117,31 @@ main(int argc, char *argv[])
 	if (rotz_parser(argc, argv, argi)) {
 		res = 1;
 		goto out;
+	} else if (argi->inputs_num < 1) {
+		res = 1;
+		goto out;
 	}
 
 	if (argi->database_given) {
 		db = argi->database_arg;
 	}
-	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
+	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
 		res = 1;
 		goto out;
 	}
 
-	fixup_vtx(ctx);
+	/* cloud all tags mode, undocumented prefix feature */
+	clo->pre.d = rotz_tag(argi->inputs[0]);
+	clo->pre.z = strlen(clo->pre.d);
+	clo->show_numbers = 1;
+
+	if (argi->top_given) {
+		clo->ntop = argi->top_arg;
+	} else {
+		clo->ntop = -1UL;
+	}
+	iter(ctx, clo);
 
 	/* big resource freeing */
 	free_rotz(ctx);
@@ -126,4 +151,4 @@ out:
 }
 #endif	/* STANDALONE */
 
-/* rotz-fsck.c ends here */
+/* rotz-search.c ends here */
