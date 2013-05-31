@@ -116,6 +116,17 @@ rotz_fsck_LDFLAGS += $(tokyocabinet_LIBS)
 rotz_fsck_LDADD = librotz.la
 BUILT_SOURCES += rotz-fsck-clo.c rotz-fsck-clo.h
 
+noinst_PROGRAMS += rotz-test
+rotz_test_SOURCES = rotz-test.c
+rotz_test_SOURCES += rotz-cmd-api.h
+rotz_test_SOURCES += rotz-test-clo.h rotz-test-clo.ggo
+rotz_test_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
+rotz_test_CPPFLAGS += $(tokyocabinet_CFLAGS)
+rotz_test_LDFLAGS = $(AM_LDFLAGS)
+rotz_test_LDFLAGS += $(tokyocabinet_LIBS)
+rotz_test_LDADD = librotz.la
+BUILT_SOURCES += rotz-test-clo.c rotz-test-clo.h
+
 version.c: version.c.in $(top_builddir)/version.mk
 	sed -e 's,[@]VERSION[@],$(VERSION),g' <$(srcdir)/$@.in >$@
 
