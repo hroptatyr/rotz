@@ -600,6 +600,14 @@ rotz_get_edges(rotz_t ctx, rtz_vtx_t from)
 	return (rtz_vtxlst_t){.z = el.z, .d = d};
 }
 
+size_t
+rotz_get_nedges(rotz_t ctx, rtz_vtx_t from)
+{
+	rtz_edgkey_t sfrom = rtz_edgkey(from);
+
+	return get_edges(ctx, sfrom).z;
+}
+
 int
 rotz_rem_edges(rotz_t ctx, rtz_vtx_t from)
 {
