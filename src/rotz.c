@@ -39,6 +39,7 @@
 #endif	/* HAVE_CONFIG_H */
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <string.h>
 #include <tcbdb.h>
 
@@ -52,10 +53,15 @@ struct rotz_s {
 
 /* low level graph lib */
 rotz_t
-make_rotz(const char *db)
+make_rotz(const char *db, ...)
 {
-	static const int omode = BDBOREADER | BDBOWRITER | BDBOCREAT;
+	va_list ap;
+	int omode = BDBOREADER;
 	struct rotz_s res;
+
+	va_start(ap, db);
+	omode |= va_arg(ap, int);
+	va_end(ap);
 
 	if (UNLIKELY((res.db = tcbdbnew()) == NULL)) {
 		goto out;
