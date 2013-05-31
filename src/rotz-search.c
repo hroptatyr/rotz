@@ -1,4 +1,4 @@
-/*** rotz-cloud.c -- rotz tag cloud'er
+/*** rotz-search.c -- rotz tag search
  *
  * Copyright (C) 2013 Sebastian Freundt
  *
@@ -99,8 +99,8 @@ iter(rotz_t ctx, const struct iter_clo_s *clo)
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-cloud-clo.h"
-#include "rotz-cloud-clo.c"
+#include "rotz-search-clo.h"
+#include "rotz-search-clo.c"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */
@@ -151,4 +151,4 @@ out:
 }
 #endif	/* STANDALONE */
 
-/* rotz-cloud.c ends here */
+/* rotz-search.c ends here */

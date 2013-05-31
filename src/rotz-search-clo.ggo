@@ -1,7 +1,7 @@
 args "--unamed-opts --no-handle-error --long-help -a rotz_args_info -f rotz_parser"
-package "rotz-cloud"
-usage "rotz-cloud [OPTIONS...]"
-description "Show all tags along with a count."
+package "rotz-search"
+usage "rotz-cloud [OPTIONS...] SEARCH_STRING"
+description "Show all tags that start with SEARCH_STRING."
 
 option "database" -
 	"Tagging service file or host, default: `rotz.tcb'"
