@@ -61,7 +61,7 @@ typedef struct {
 
 
 /* lower level graph api */
-extern rotz_t make_rotz(const char *dbfile);
+extern rotz_t make_rotz(const char *dbfile, ...);
 extern void free_rotz(rotz_t);
 
 /**
