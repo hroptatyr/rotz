@@ -42,6 +42,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <tcbdb.h>
+#include <fcntl.h>
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
@@ -109,7 +110,7 @@ main(int argc, char *argv[])
 	if (argi->database_given) {
 		db = argi->database_arg;
 	}
-	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
+	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
 		res = 1;
 		goto out;
