@@ -115,6 +115,10 @@ extern int rotz_get_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to);
 extern rtz_vtxlst_t rotz_get_edges(rotz_t, rtz_vtx_t vid);
 
 /**
+ * Return the number of (outgoing) edges from a vertex VID. */
+extern size_t rotz_get_nedges(rotz_t, rtz_vtx_t vid);
+
+/**
  * Delete (outgoing) edges from a vertex VID. */
 extern int rotz_rem_edges(rotz_t, rtz_vtx_t vid);
 
