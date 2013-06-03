@@ -154,6 +154,7 @@ main(int argc, char *argv[])
 	rotz_vtx_iter(ctx, iter_cb, clo);
 	if (argi->top_given) {
 		prnt_top(clo);
+		rotz_free_wtxlst(clo->wl);
 	}
 
 	/* big resource freeing */
