@@ -59,6 +59,18 @@ struct iter_clo_s {
 
 
 static void
+prnt_wtx(rtz_vtx_t it, unsigned int w)
+{
+	const char *sym = rotz_get_name(ctx, it);
+
+	fputs(rotz_massage_name(sym), stdout);
+	fputc('\t', stdout);
+	fprintf(stdout, "%u", w);
+	fputc('\n', stdout);
+	return;
+}
+
+static void
 iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 {
 	const struct iter_clo_s *cp = clo;
@@ -100,11 +112,40 @@ static void
 prnt_top(const struct iter_clo_s *cp)
 {
 	for (size_t i = cp->wl.z; i-- > 0 && cp->wl.d[i];) {
-		const char *sym = rotz_get_name(ctx, cp->wl.d[i]);
-		fputs(rotz_massage_name(sym), stdout);
-		fputc('\t', stdout);
-		fprintf(stdout, "%u\n", cp->wl.w[i]);
+		prnt_wtx(cp->wl.d[i], cp->wl.w[i]);
 	}
+	return;
+}
+
+static void
+below(const char *what)
+{
+	rtz_vtx_t wid;
+	rtz_vtxlst_t el;
+	rtz_wtxlst_t wl = {0U};
+
+	if (UNLIKELY(!(wid = rotz_get_vertex(ctx, rotz_tag(what))))) {
+		return;
+	} else if (UNLIKELY((el = rotz_get_edges(ctx, wid)).d == NULL)) {
+		return;
+	}
+
+	for (size_t i = 0; i < el.z; i++) {
+		rtz_vtx_t it = el.d[i];
+
+		wl = rotz_munion(ctx, wl, it);
+	}
+	rotz_free_vtxlst(el);
+
+	for (size_t i = 0; i < wl.z; i++) {
+		rtz_vtx_t it = wl.d[i];
+
+		if (UNLIKELY(it == wid)) {
+			continue;
+		}
+		prnt_wtx(it, wl.w[i]);
+	}
+	rotz_free_wtxlst(wl);
 	return;
 }
 
@@ -151,9 +192,14 @@ main(int argc, char *argv[])
 		clo->wl.d = calloc(clo->wl.z, sizeof(*clo->wl.d));
 		clo->wl.w = calloc(clo->wl.z, sizeof(*clo->wl.w));
 	}
-	rotz_vtx_iter(ctx, iter_cb, clo);
+	if (argi->below_given) {
+		below(argi->below_arg);
+	} else {
+		rotz_vtx_iter(ctx, iter_cb, clo);
+	}
 	if (argi->top_given) {
 		prnt_top(clo);
+		rotz_free_wtxlst(clo->wl);
 	}
 
 	/* big resource freeing */
