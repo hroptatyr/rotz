@@ -59,6 +59,18 @@ struct iter_clo_s {
 
 
 static void
+prnt_wtx(rtz_vtx_t it, unsigned int w)
+{
+	const char *sym = rotz_get_name(ctx, it);
+
+	fputs(rotz_massage_name(sym), stdout);
+	fputc('\t', stdout);
+	fprintf(stdout, "%u", w);
+	fputc('\n', stdout);
+	return;
+}
+
+static void
 iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 {
 	const struct iter_clo_s *cp = clo;
@@ -100,10 +112,7 @@ static void
 prnt_top(const struct iter_clo_s *cp)
 {
 	for (size_t i = cp->wl.z; i-- > 0 && cp->wl.d[i];) {
-		const char *sym = rotz_get_name(ctx, cp->wl.d[i]);
-		fputs(rotz_massage_name(sym), stdout);
-		fputc('\t', stdout);
-		fprintf(stdout, "%u\n", cp->wl.w[i]);
+		prnt_wtx(cp->wl.d[i], cp->wl.w[i]);
 	}
 	return;
 }
