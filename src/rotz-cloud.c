@@ -117,6 +117,38 @@ prnt_top(const struct iter_clo_s *cp)
 	return;
 }
 
+static void
+below(const char *what)
+{
+	rtz_vtx_t wid;
+	rtz_vtxlst_t el;
+	rtz_wtxlst_t wl = {0U};
+
+	if (UNLIKELY(!(wid = rotz_get_vertex(ctx, rotz_tag(what))))) {
+		return;
+	} else if (UNLIKELY((el = rotz_get_edges(ctx, wid)).d == NULL)) {
+		return;
+	}
+
+	for (size_t i = 0; i < el.z; i++) {
+		rtz_vtx_t it = el.d[i];
+
+		wl = rotz_munion(ctx, wl, it);
+	}
+	rotz_free_vtxlst(el);
+
+	for (size_t i = 0; i < wl.z; i++) {
+		rtz_vtx_t it = wl.d[i];
+
+		if (UNLIKELY(it == wid)) {
+			continue;
+		}
+		prnt_wtx(it, wl.w[i]);
+	}
+	rotz_free_wtxlst(wl);
+	return;
+}
+
 
 #if defined STANDALONE
 #if defined __INTEL_COMPILER
@@ -160,7 +192,11 @@ main(int argc, char *argv[])
 		clo->wl.d = calloc(clo->wl.z, sizeof(*clo->wl.d));
 		clo->wl.w = calloc(clo->wl.z, sizeof(*clo->wl.w));
 	}
-	rotz_vtx_iter(ctx, iter_cb, clo);
+	if (argi->below_given) {
+		below(argi->below_arg);
+	} else {
+		rotz_vtx_iter(ctx, iter_cb, clo);
+	}
 	if (argi->top_given) {
 		prnt_top(clo);
 		rotz_free_wtxlst(clo->wl);
