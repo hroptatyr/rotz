@@ -10,3 +10,7 @@ option "database" -
 option "top" -
 	"Only display the top N tags."
 	int typestr="N" optional
+
+option "below" -
+	"Display tags that intersect with TAG."
+	string typestr="TAG" optional

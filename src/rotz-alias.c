@@ -69,7 +69,7 @@ aliases(rotz_t ctx, rtz_vtx_t tid)
 	al = rotz_get_aliases(ctx, tid);
 	for (const char *p = al.d, *const ep = al.d + al.z; p < ep;
 	     p += strlen(p) + 1/*for \nul*/) {
-		puts(p);
+		puts(rotz_massage_name(p));
 	}
 	rotz_free_r(al);
 	return;
