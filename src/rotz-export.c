@@ -71,7 +71,7 @@ iter_dot_cb(rtz_vtx_t vid, rtz_const_vtxlst_t vl, void *clo)
 }
 
 static int
-iter_gmlv_cb(rtz_vtx_t vid, const char *vtx, void *clo)
+iter_gmlv_cb(rtz_vtx_t vid, const char *vtx, void *UNUSED(clo))
 {
 	printf("\
   node [\n\
