@@ -41,5 +41,5 @@ VPATH += $(top_srcdir)/src
 	$(AM_V_GEN) $(HELP2MAN) -S "$(PACKAGE_STRING)" -p "($(PACKAGE))$*" \
 		-I "$(srcdir)/author.h2m" \
 		-i "$(srcdir)/$*.name" \
-		-o $@ $<
+		-o $@ $*
 
