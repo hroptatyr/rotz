@@ -10,6 +10,10 @@ option "database" -
 	"Tagging service file or host, default: `rotz.tcb'"
 	string typestr="FILE|HOST" optional
 
+option "syms" -
+	"If no TAG or RSYM is given, display syms instead of tags."
+	optional
+
 ## just testing
 option "union" -
 	"Return a union of all given TAG/RSYM results."
