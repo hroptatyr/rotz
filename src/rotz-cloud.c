@@ -70,7 +70,7 @@ prnt_wtx(rtz_vtx_t it, unsigned int w)
 	return;
 }
 
-static void
+static int
 iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 {
 	const struct iter_clo_s *cp = clo;
@@ -78,13 +78,13 @@ iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 
 	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
 		/* that's a symbol, vtx would be a tag then */
-		return;
+		return 0;
 	}
 
 	vtx = rotz_massage_name(vtx);
 	if (cp->pre.d && memcmp(vtx, cp->pre.d, cp->pre.z)) {
 		/* not matching prefix */
-		return;
+		return 0;
 	}
 
 	el = rotz_get_edges(ctx, vid);
@@ -105,7 +105,7 @@ iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 		cp->wl.w[pos] = el.z;
 	}
 	rotz_free_vtxlst(el);
-	return;
+	return 0;
 }
 
 static void
@@ -118,7 +118,7 @@ prnt_top(const struct iter_clo_s *cp)
 }
 
 static void
-below(const char *what)
+pivot(const char *what)
 {
 	rtz_vtx_t wid;
 	rtz_vtxlst_t el;
@@ -192,8 +192,8 @@ main(int argc, char *argv[])
 		clo->wl.d = calloc(clo->wl.z, sizeof(*clo->wl.d));
 		clo->wl.w = calloc(clo->wl.z, sizeof(*clo->wl.w));
 	}
-	if (argi->below_given) {
-		below(argi->below_arg);
+	if (argi->pivot_given) {
+		pivot(argi->pivot_arg);
 	} else {
 		rotz_vtx_iter(ctx, iter_cb, clo);
 	}

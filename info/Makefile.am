@@ -35,10 +35,9 @@ EXTRA_DIST += rotz-rename.name
 EXTRA_DIST += rotz-cloud.name
 
 VPATH += $(top_srcdir)/src
-VPATH += $(top_builddir)/src
 
 ## help2man helpers
-%.man: %$(EXEEXT) $(top_srcdir)/configure $(top_builddir)/version.mk
+%.man: %-clo.ggo $(top_srcdir)/configure $(top_builddir)/version.mk
 	$(AM_V_GEN) $(HELP2MAN) -S "$(PACKAGE_STRING)" -p "($(PACKAGE))$*" \
 		-I "$(srcdir)/author.h2m" \
 		-i "$(srcdir)/$*.name" \

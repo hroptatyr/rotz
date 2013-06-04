@@ -682,7 +682,7 @@ rotz_rem_edge(rotz_t ctx, rtz_vtx_t from, rtz_vtx_t to)
 /* iterators
  * we can't keep the promise here to separate keys and tokyocabinet guts */
 void
-rotz_vtx_iter(rotz_t ctx, void(*cb)(rtz_vtx_t, const char*, void*), void *clo)
+rotz_vtx_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const char*, void*), void *clo)
 {
 	BDBCUR *c = tcbdbcurnew(ctx->db);
 
@@ -701,7 +701,9 @@ rotz_vtx_iter(rotz_t ctx, void(*cb)(rtz_vtx_t, const char*, void*), void *clo)
 			continue;
 		}
 		/* otherwise just call the callback */
-		cb(vid, vp, clo);
+		if (UNLIKELY(cb(vid, vp, clo) < 0)) {
+			break;
+		}
 
 	} while (tcbdbcurnext(c));
 

@@ -47,17 +47,17 @@
 #include "nifty.h"
 
 
-static void
+static int
 iter_cb(rtz_vtx_t UNUSED(vid), const char *vtx, void *UNUSED(clo))
 {
 	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
 		/* that's a symbol, vtx would be a tag then */
-		return;
+		return 0;
 	} else if (memcmp(vtx, RTZ_TAGSPC, sizeof(RTZ_TAGSPC) - 1) == 0) {
 		vtx += RTZ_PRE_Z;
 	}
 	puts(vtx);
-	return;
+	return 0;
 }
 
 static void
