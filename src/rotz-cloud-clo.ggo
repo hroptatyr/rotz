@@ -11,6 +11,6 @@ option "top" -
 	"Only display the top N tags."
 	int typestr="N" optional
 
-option "below" -
+option "pivot" -
 	"Display tags that intersect with TAG."
 	string typestr="TAG" optional

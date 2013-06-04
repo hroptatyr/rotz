@@ -118,7 +118,7 @@ prnt_top(const struct iter_clo_s *cp)
 }
 
 static void
-below(const char *what)
+pivot(const char *what)
 {
 	rtz_vtx_t wid;
 	rtz_vtxlst_t el;
@@ -192,8 +192,8 @@ main(int argc, char *argv[])
 		clo->wl.d = calloc(clo->wl.z, sizeof(*clo->wl.d));
 		clo->wl.w = calloc(clo->wl.z, sizeof(*clo->wl.w));
 	}
-	if (argi->below_given) {
-		below(argi->below_arg);
+	if (argi->pivot_given) {
+		pivot(argi->pivot_arg);
 	} else {
 		rotz_vtx_iter(ctx, iter_cb, clo);
 	}
