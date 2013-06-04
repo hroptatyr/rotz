@@ -46,6 +46,8 @@
 #include "rotz-cmd-api.h"
 #include "nifty.h"
 
+static int clusterp;
+
 
 static int
 iter_dot_cb(rtz_vtx_t vid, rtz_const_vtxlst_t vl, void *clo)
@@ -58,6 +60,9 @@ iter_dot_cb(rtz_vtx_t vid, rtz_const_vtxlst_t vl, void *clo)
 		return 0;
 	} else if (memcmp(vtx, RTZ_TAGSPC, sizeof(RTZ_TAGSPC) - 1) == 0) {
 		vtx += RTZ_PRE_Z;
+	} else if (clusterp) {
+		char *p = strchr(vtx, ':');
+		*p = '\0';
 	}
 
 	for (size_t i = 0; i < vl.z; i++) {
@@ -71,7 +76,7 @@ iter_dot_cb(rtz_vtx_t vid, rtz_const_vtxlst_t vl, void *clo)
 }
 
 static int
-iter_gmlv_cb(rtz_vtx_t vid, const char *vtx, void *clo)
+iter_gmlv_cb(rtz_vtx_t vid, const char *vtx, void *UNUSED(clo))
 {
 	printf("\
   node [\n\
@@ -164,6 +169,9 @@ main(int argc, char *argv[])
 		res = 1;
 		goto out;
 	}
+
+	/* setting global opts */
+	clusterp = argi->cluster_given;
 
 	if (argi->gml_given) {
 		xprt_gml(ctx);
