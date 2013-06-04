@@ -481,7 +481,7 @@ rtz_edgkey(rtz_vtx_t vid)
 	return edg;
 }
 
-static __attribute__((unused)) rtz_vtx_t
+static rtz_vtx_t
 rtz_edg(rtz_edgkey_t edg)
 {
 /* return the key for the incidence list */
@@ -699,6 +699,38 @@ rotz_vtx_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const char*, void*), void *clo)
 		}
 		/* otherwise just call the callback */
 		if (UNLIKELY(cb(vid, vp, clo) < 0)) {
+			break;
+		}
+
+	} while (tcbdbcurnext(c));
+
+	tcbdbcurdel(c);
+	return;
+}
+
+void
+rotz_edg_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const_vtxlst_t, void*), void *clo)
+{
+	BDBCUR *c = tcbdbcurnew(ctx->db);
+
+	tcbdbcurjump(c, RTZ_EDGPRE, sizeof(RTZ_EDGPRE));
+	do {
+		int z[1];
+		const void *kp;
+		rtz_vtx_t vid;
+		const void *vp;
+		const_vtxlst_t vl;
+
+		if (UNLIKELY((kp = tcbdbcurkey3(c, z)) == NULL) ||
+		    UNLIKELY(*z != sizeof(RTZ_EDGPRE) + sizeof(vid)) ||
+		    UNLIKELY(!(vid = rtz_edg(kp)))) {
+			break;
+		} else if (UNLIKELY((vp = tcbdbcurval3(c, z)) == NULL)) {
+			continue;
+		}
+		/* otherwise just call the callback */
+		vl = (const_vtxlst_t){.z = *z / sizeof(*vl.d), .d = vp};
+		if (UNLIKELY(cb(vid, vl, clo) < 0)) {
 			break;
 		}
 

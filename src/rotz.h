@@ -157,6 +157,15 @@ extern int rotz_rem_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to);
 extern void
 rotz_vtx_iter(rotz_t, int(*cb)(rtz_vtx_t, const char*, void*), void *clo);
 
+/**
+ * Call CB for for every edge in CTX, passing the source vertex, the
+ * vertex' adjacency list, and a custom pointer to a closure object C.
+ * The iteration stops when the callback returns values <0.
+ * The adjacency list passed to the callback resides in static memory
+ * and must not be freed. */
+extern void
+rotz_edg_iter(rotz_t, int(*cb)(rtz_vtx_t, rtz_const_vtxlst_t, void*), void *C);
+
 
 /* set operations */
 /**
