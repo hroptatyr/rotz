@@ -468,10 +468,7 @@ typedef const unsigned char *rtz_edgkey_t;
 #define RTZ_EDGPRE	"edg"
 #define RTZ_EDGKEY_Z	(sizeof(RTZ_EDGPRE) + sizeof(rtz_vtx_t))
 
-typedef struct {
-	size_t z;
-	const rtz_vtx_t *d;
-} const_vtxlst_t;
+#define const_vtxlst_t	rtz_const_vtxlst_t
 
 static rtz_edgkey_t
 rtz_edgkey(rtz_vtx_t vid)
@@ -484,7 +481,7 @@ rtz_edgkey(rtz_vtx_t vid)
 	return edg;
 }
 
-static __attribute__((unused)) rtz_vtx_t
+static rtz_vtx_t
 rtz_edg(rtz_edgkey_t edg)
 {
 /* return the key for the incidence list */
@@ -708,6 +705,47 @@ rotz_vtx_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const char*, void*), void *clo)
 	} while (tcbdbcurnext(c));
 
 	tcbdbcurdel(c);
+	return;
+}
+
+void
+rotz_edg_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const_vtxlst_t, void*), void *clo)
+{
+	rtz_vtxlst_t vl = {.z = 0U};
+	BDBCUR *c = tcbdbcurnew(ctx->db);
+
+	tcbdbcurjump(c, RTZ_EDGPRE, sizeof(RTZ_EDGPRE));
+	do {
+		int z[1];
+		const void *kp;
+		rtz_vtx_t vid;
+		const void *vp;
+		const_vtxlst_t cvl;
+
+		if (UNLIKELY((kp = tcbdbcurkey3(c, z)) == NULL) ||
+		    UNLIKELY(*z != sizeof(RTZ_EDGPRE) + sizeof(vid)) ||
+		    UNLIKELY(!(vid = rtz_edg(kp)))) {
+			break;
+		} else if (UNLIKELY((vp = tcbdbcurval3(c, z)) == NULL)) {
+			continue;
+		}
+		/* copy the vl */
+		cvl.z = *z / sizeof(*vl.d);
+		if (UNLIKELY(cvl.z > vl.z)) {
+			vl.z = ((cvl.z - 1) / 64U + 1) * 64U;
+			vl.d = realloc(vl.d, vl.z * sizeof(*vl.d));
+		}
+		memcpy(vl.d, vp, cvl.z * sizeof(*cvl.d));
+		cvl.d = vl.d;
+		/* otherwise just call the callback */
+		if (UNLIKELY(cb(vid, cvl, clo) < 0)) {
+			break;
+		}
+
+	} while (tcbdbcurnext(c));
+
+	tcbdbcurdel(c);
+	rotz_free_vtxlst(vl);
 	return;
 }
 
