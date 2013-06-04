@@ -71,6 +71,8 @@ del_syms(rotz_t ctx, const char *tag)
 	rtz_vtxlst_t el;
 	rtz_vtx_t tid;
 
+	/* massage tag */
+	tag = rotz_tag(tag);
 	if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
 		/* not sure what to delete */
 		return;
