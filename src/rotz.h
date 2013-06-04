@@ -65,15 +65,15 @@ extern rotz_t make_rotz(const char *dbfile, ...);
 extern void free_rotz(rotz_t);
 
 /**
- * Return >0 iff rotz db contains vertex V. */
+ * Return object handle for vertex V. */
 extern rtz_vtx_t rotz_get_vertex(rotz_t, const char *v);
 
 /**
- * Add vertex V to rotz db and return its ID. */
+ * Add vertex V to rotz database file and return its object handle. */
 extern rtz_vtx_t rotz_add_vertex(rotz_t, const char *v);
 
 /**
- * Remove vertex V from rotz db and return its ID. */
+ * Remove vertex V from rotz database file and return its object handle. */
 extern rtz_vtx_t rotz_rem_vertex(rotz_t, const char *v);
 
 /**
@@ -98,7 +98,7 @@ extern void rotz_free_r(rtz_buf_t);
 extern int rotz_add_alias(rotz_t, rtz_vtx_t v, const char *alias);
 
 /**
- * Remove ALIAS from the list of aliases of V. */
+ * Remove ALIAS from the list of aliases (associated with ALIAS). */
 extern int rotz_rem_alias(rotz_t, const char *alias);
 
 /**
