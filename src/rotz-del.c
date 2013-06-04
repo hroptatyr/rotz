@@ -65,6 +65,32 @@ del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 	return;
 }
 
+static void
+del_syms(rotz_t ctx, const char *tag)
+{
+	rtz_vtxlst_t el;
+	rtz_vtx_t tid;
+
+	if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
+		/* not sure what to delete */
+		return;
+	} else if (UNLIKELY((el = rotz_get_edges(ctx, tid)).d == NULL)) {
+		/* nothing to delete */
+		return;
+	}
+	/* get rid of all the edges */
+	rotz_rem_edges(ctx, tid);
+	/* now go through the list EL and delete TID */
+	for (size_t i = 0; i < el.z; i++) {
+		rotz_rem_edge(ctx, el.d[i], tid);
+	}
+	/* finalise the list */
+	rotz_free_vtxlst(el);
+	/* finally delete the vertex */
+	rotz_rem_vertex(ctx, tag);
+	return;
+}
+
 
 #if defined STANDALONE
 #if defined __INTEL_COMPILER
@@ -89,11 +115,6 @@ main(int argc, char *argv[])
 	if (rotz_parser(argc, argv, argi)) {
 		res = 1;
 		goto out;
-	} else if (argi->inputs_num < 1) {
-		fputs("Error: no TAG argument specified\n\n", stderr);
-		rotz_parser_print_help();
-		res = 1;
-		goto out;
 	}
 
 	if (argi->database_given) {
@@ -104,31 +125,17 @@ main(int argc, char *argv[])
 		res = 1;
 		goto out;
 	}
-	tag = rotz_tag(argi->inputs[0]);
-	if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
-		goto fini;
-	}
-	for (unsigned int i = 1; i < argi->inputs_num; i++) {
-		del_tag(ctx, tid, argi->inputs[i]);
-	}
-	if (argi->inputs_num == 1 && isatty(STDIN_FILENO)) {
-		/* del all syms with TAG mode */
-		rtz_vtxlst_t el;
-
-		if (UNLIKELY((el = rotz_get_edges(ctx, tid)).d == NULL)) {
-			/* nothing to delete */
+	if (argi->inputs_num > 1) {
+		tag = rotz_tag(argi->inputs[0]);
+		if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
 			goto fini;
 		}
-		/* get rid of all the edges */
-		rotz_rem_edges(ctx, tid);
-		/* now go through the list EL and delete TID */
-		for (size_t i = 0; i < el.z; i++) {
-			rotz_rem_edge(ctx, el.d[i], tid);
+		for (unsigned int i = 1; i < argi->inputs_num; i++) {
+			del_tag(ctx, tid, argi->inputs[i]);
 		}
-		/* finalise the list */
-		rotz_free_vtxlst(el);
-		/* finally delete the vertex */
-		rotz_rem_vertex(ctx, tag);
+	} else if (argi->inputs_num == 1 && isatty(STDIN_FILENO)) {
+		/* del all syms assoc'd with TAG */
+		del_syms(ctx, argi->inputs[0]);
 	} else if (argi->inputs_num == 1) {
 		/* del tag/sym pairs from stdin */
 		char *line = NULL;
@@ -138,6 +145,17 @@ main(int argc, char *argv[])
 		while ((nrd = getline(&line, &llen, stdin)) > 0) {
 			line[nrd - 1] = '\0';
 			del_tag(ctx, tid, line);
+		}
+		free(line);
+	} else if (!isatty(STDIN_FILENO)) {
+		/* del tags from stdin */
+		char *line = NULL;
+		size_t llen = 0U;
+		ssize_t nrd;
+
+		while ((nrd = getline(&line, &llen, stdin)) > 0) {
+			line[nrd - 1] = '\0';
+			del_syms(ctx, line);
 		}
 		free(line);
 	}
