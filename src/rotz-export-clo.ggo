@@ -1,0 +1,8 @@
+args "--unamed-opts --no-handle-error --long-help -a rotz_args_info -f rotz_parser"
+package "rotz-export"
+usage "rotz-export [OPTIONS...]"
+description "Export the database to a graph file."
+
+option "database" -
+	"Tagging service file or host, default: `rotz.tcb'"
+	string typestr="FILE|HOST" optional
