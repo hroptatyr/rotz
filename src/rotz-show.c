@@ -60,6 +60,18 @@ iter_cb(rtz_vtx_t UNUSED(vid), const char *vtx, void *UNUSED(clo))
 	return 0;
 }
 
+static int
+iter_syms_cb(rtz_vtx_t UNUSED(vid), const char *vtx, void *UNUSED(clo))
+{
+	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) != 0) {
+		/* it's not a symbol, bugger off */
+		return 0;
+	}
+	vtx += RTZ_PRE_Z;
+	puts(vtx);
+	return 0;
+}
+
 static void
 prnt_vtxlst(rotz_t ctx, rtz_vtxlst_t el)
 {
@@ -217,7 +229,10 @@ main(int argc, char *argv[])
 		shsort(r.wl);
 		prnt_wtxlst(ctx, r.wl);
 	}
-	if (argi->inputs_num == 0) {
+	if (argi->inputs_num == 0 && argi->syms_given) {
+		/* show all syms mode */
+		rotz_vtx_iter(ctx, iter_syms_cb, NULL);
+	} else if (argi->inputs_num == 0) {
 		/* show all tags mode */
 		rotz_vtx_iter(ctx, iter_cb, NULL);
 	}
