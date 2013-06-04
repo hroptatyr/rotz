@@ -6,3 +6,13 @@ description "Export the database to a graph file."
 option "database" -
 	"Tagging service file or host, default: `rotz.tcb'"
 	string typestr="FILE|HOST" optional
+
+defgroup "format"
+
+groupoption "dot" -
+	"Output a graph in the dot file format"
+	optional group="format"
+
+groupoption "gml" -
+	"Output a graph in the gml file format"
+	optional group="format"
