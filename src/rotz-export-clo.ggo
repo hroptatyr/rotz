@@ -7,6 +7,10 @@ option "database" -
 	"Tagging service file or host, default: `rotz.tcb'"
 	string typestr="FILE|HOST" optional
 
+option "cluster" -
+	"Cluster parameterised tags into one."
+	optional
+
 defgroup "format"
 
 groupoption "dot" -
