@@ -48,9 +48,10 @@
 
 
 static int
-iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
+iter_cb(rtz_vtx_t vid, rtz_const_vtxlst_t vl, void *clo)
 {
-	rtz_vtxlst_t vl;
+	rtz_buf_t n = rotz_get_name_r(clo, vid);
+	const char *vtx = n.d;
 
 	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
 		/* that's a symbol, vtx would be a tag then */
@@ -59,16 +60,13 @@ iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 		vtx += RTZ_PRE_Z;
 	}
 
-	vl = rotz_get_edges(clo, vid);
-
 	for (size_t i = 0; i < vl.z; i++) {
 		const char *vld = rotz_get_name(clo, vl.d[i]);
 		const char *tgt = rotz_massage_name(vld);
 
 		printf("  \"%s\" -- \"%s\";\n", vtx, tgt);
 	}
-
-	rotz_free_vtxlst(vl);
+	rotz_free_r(n);
 	return 0;
 }
 
@@ -108,7 +106,7 @@ main(int argc, char *argv[])
 	puts("graph rotz {");
 
 	/* go through all vertices */
-	rotz_vtx_iter(ctx, iter_cb, ctx);
+	rotz_edg_iter(ctx, iter_cb, ctx);
 
 	puts("}");
 
