@@ -50,9 +50,20 @@ typedef struct {
 
 typedef struct {
 	size_t z;
+	const rtz_vtx_t *d;
+} rtz_const_vtxlst_t;
+
+typedef struct {
+	size_t z;
 	rtz_vtx_t *d;
 	unsigned int *w;
 } rtz_wtxlst_t;
+
+typedef struct {
+	size_t z;
+	const rtz_vtx_t *d;
+	unsigned int *w;
+} rtz_const_wtxlst_t;
 
 typedef struct {
 	size_t z;

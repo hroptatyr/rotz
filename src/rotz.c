@@ -468,10 +468,7 @@ typedef const unsigned char *rtz_edgkey_t;
 #define RTZ_EDGPRE	"edg"
 #define RTZ_EDGKEY_Z	(sizeof(RTZ_EDGPRE) + sizeof(rtz_vtx_t))
 
-typedef struct {
-	size_t z;
-	const rtz_vtx_t *d;
-} const_vtxlst_t;
+#define const_vtxlst_t	rtz_const_vtxlst_t
 
 static rtz_edgkey_t
 rtz_edgkey(rtz_vtx_t vid)
