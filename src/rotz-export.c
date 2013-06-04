@@ -48,7 +48,7 @@
 
 
 static int
-iter_cb(rtz_vtx_t vid, rtz_const_vtxlst_t vl, void *clo)
+iter_dot_cb(rtz_vtx_t vid, rtz_const_vtxlst_t vl, void *clo)
 {
 	rtz_buf_t n = rotz_get_name_r(clo, vid);
 	const char *vtx = n.d;
@@ -68,6 +68,68 @@ iter_cb(rtz_vtx_t vid, rtz_const_vtxlst_t vl, void *clo)
 	}
 	rotz_free_r(n);
 	return 0;
+}
+
+static int
+iter_gmlv_cb(rtz_vtx_t vid, const char *vtx, void *clo)
+{
+	printf("\
+  node [\n\
+    id %u\n\
+    label \"%s\"\n\
+  ]\n", vid, rotz_massage_name(vtx));
+	return 0;
+}
+
+static int
+iter_gmle_cb(rtz_vtx_t sid, rtz_const_vtxlst_t vl, void *clo)
+{
+	const char *stx = rotz_get_name(clo, sid);
+
+	if (memcmp(stx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
+		return 0;
+	}
+
+	for (size_t i = 0; i < vl.z; i++) {
+		rtz_vtx_t tid = vl.d[i];
+
+		printf("\
+  edge [\n\
+    source %u\n\
+    target %u\n\
+  ]\n", sid, tid);
+	}
+	return 0;
+}
+
+static void
+xprt_dot(rotz_t ctx)
+{
+	puts("graph rotz {");
+
+	/* go through all edges */
+	rotz_edg_iter(ctx, iter_dot_cb, ctx);
+
+	puts("}");
+	return;
+}
+
+static void
+xprt_gml(rotz_t ctx)
+{
+	puts("\
+graph [\n\
+  directed 0\n\
+  id 0\n");
+
+	/* go through all vertices */
+	rotz_vtx_iter(ctx, iter_gmlv_cb, ctx);
+
+	/* go through all edges */
+	rotz_edg_iter(ctx, iter_gmle_cb, ctx);
+
+	puts("]");
+	return;
 }
 
 
@@ -103,12 +165,12 @@ main(int argc, char *argv[])
 		goto out;
 	}
 
-	puts("graph rotz {");
-
-	/* go through all vertices */
-	rotz_edg_iter(ctx, iter_cb, ctx);
-
-	puts("}");
+	if (argi->gml_given) {
+		xprt_gml(ctx);
+	} else if (argi->dot_given || 1) {
+		/* default file format is dot */
+		xprt_dot(ctx);
+	}
 
 	/* big resource freeing */
 	free_rotz(ctx);
