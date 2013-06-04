@@ -711,6 +711,7 @@ rotz_vtx_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const char*, void*), void *clo)
 void
 rotz_edg_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const_vtxlst_t, void*), void *clo)
 {
+	rtz_vtxlst_t vl = {.z = 0U};
 	BDBCUR *c = tcbdbcurnew(ctx->db);
 
 	tcbdbcurjump(c, RTZ_EDGPRE, sizeof(RTZ_EDGPRE));
@@ -719,7 +720,7 @@ rotz_edg_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const_vtxlst_t, void*), void *clo)
 		const void *kp;
 		rtz_vtx_t vid;
 		const void *vp;
-		const_vtxlst_t vl;
+		const_vtxlst_t cvl;
 
 		if (UNLIKELY((kp = tcbdbcurkey3(c, z)) == NULL) ||
 		    UNLIKELY(*z != sizeof(RTZ_EDGPRE) + sizeof(vid)) ||
@@ -728,15 +729,23 @@ rotz_edg_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const_vtxlst_t, void*), void *clo)
 		} else if (UNLIKELY((vp = tcbdbcurval3(c, z)) == NULL)) {
 			continue;
 		}
+		/* copy the vl */
+		cvl.z = *z / sizeof(*vl.d);
+		if (UNLIKELY(cvl.z > vl.z)) {
+			vl.z = ((cvl.z - 1) / 64U + 1) * 64U;
+			vl.d = realloc(vl.d, vl.z * sizeof(*vl.d));
+		}
+		memcpy(vl.d, vp, cvl.z * sizeof(*cvl.d));
+		cvl.d = vl.d;
 		/* otherwise just call the callback */
-		vl = (const_vtxlst_t){.z = *z / sizeof(*vl.d), .d = vp};
-		if (UNLIKELY(cb(vid, vl, clo) < 0)) {
+		if (UNLIKELY(cb(vid, cvl, clo) < 0)) {
 			break;
 		}
 
 	} while (tcbdbcurnext(c));
 
 	tcbdbcurdel(c);
+	rotz_free_vtxlst(vl);
 	return;
 }
 
