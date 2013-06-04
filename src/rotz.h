@@ -141,9 +141,10 @@ extern int rotz_rem_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to);
 
 /**
  * Call CB for for every vertex in CTX, passing the vertex, its name and
- * a custom pointer to a closure object CLO. */
+ * a custom pointer to a closure object CLO.
+ * The iteration stops when the callback returns values <0. */
 extern void
-rotz_vtx_iter(rotz_t, void(*cb)(rtz_vtx_t, const char*, void*), void *clo);
+rotz_vtx_iter(rotz_t, int(*cb)(rtz_vtx_t, const char*, void*), void *clo);
 
 
 /* set operations */
