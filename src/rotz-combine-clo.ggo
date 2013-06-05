@@ -8,3 +8,7 @@ If TAG is omitted, read tags to be combined from stdin."
 option "database" -
 	"Tagging service file or host, default: `rotz.tcb'"
 	string typestr="FILE|HOST" optional
+
+option "into" -
+	"Don't create aliases, just move all tags into TAG."
+	string typestr="TAG" optional
