@@ -62,17 +62,32 @@ alias_tag(rotz_t ctx, rtz_vtx_t tid, const char *alias)
 }
 
 static void
-aliases(rotz_t ctx, rtz_vtx_t tid)
+aliases(rotz_t ctx, rtz_vtx_t tid, char sep)
 {
 	rtz_buf_t al;
 
 	al = rotz_get_aliases(ctx, tid);
 	for (const char *p = al.d, *const ep = al.d + al.z; p < ep;
 	     p += strlen(p) + 1/*for \nul*/) {
-		puts(rotz_massage_name(p));
+		if (LIKELY(p > al.d)) {
+			fputc(sep, stdout);
+		}
+		fputs(rotz_massage_name(p), stdout);
 	}
 	rotz_free_r(al);
+	fputc('\n', stdout);
 	return;
+}
+
+static int
+iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
+{
+	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
+		/* that's a symbol, symbol can't have aliases, bugger off */
+		return 0;
+	}
+	aliases(clo, vid, '\t');
+	return 0;
 }
 
 
@@ -99,11 +114,6 @@ main(int argc, char *argv[])
 	if (rotz_parser(argc, argv, argi)) {
 		res = 1;
 		goto out;
-	} else if (argi->inputs_num < 1) {
-		fputs("Error: no TAG argument specified\n\n", stderr);
-		rotz_parser_print_help();
-		res = 1;
-		goto out;
 	}
 
 	if (argi->database_given) {
@@ -114,34 +124,40 @@ main(int argc, char *argv[])
 		res = 1;
 		goto out;
 	}
-	tag = rotz_tag(argi->inputs[0]);
-	if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
-		goto fini;
-	}
-	if (argi->inputs_num > 1 && !argi->delete_given) {
-		for (unsigned int i = 1; i < argi->inputs_num; i++) {
-			alias_tag(ctx, tid, argi->inputs[i]);
-		}
-	} else if (argi->delete_given) {
-		/* del tag */
-		rotz_rem_alias(ctx, tag);
-		for (unsigned int i = 1; i < argi->inputs_num; i++) {
-			rotz_rem_alias(ctx, rotz_tag(argi->inputs[i]));
-		}
-	} else if (isatty(STDIN_FILENO)) {
-		/* report aliases for TAG */
-		aliases(ctx, tid);
-	} else {
-		/* alias tags from stdin */
-		char *line = NULL;
-		size_t llen = 0U;
-		ssize_t nrd;
 
-		while ((nrd = getline(&line, &llen, stdin)) > 0) {
-			line[nrd - 1] = '\0';
-			alias_tag(ctx, tid, line);
+	if (argi->inputs_num > 0) {
+		tag = rotz_tag(argi->inputs[0]);
+		if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
+			goto fini;
 		}
-		free(line);
+		if (argi->inputs_num > 1 && !argi->delete_given) {
+			for (unsigned int i = 1; i < argi->inputs_num; i++) {
+				alias_tag(ctx, tid, argi->inputs[i]);
+			}
+		} else if (argi->delete_given) {
+			/* del tag */
+			rotz_rem_alias(ctx, tag);
+			for (unsigned int i = 1; i < argi->inputs_num; i++) {
+				rotz_rem_alias(ctx, rotz_tag(argi->inputs[i]));
+			}
+		} else if (isatty(STDIN_FILENO)) {
+			/* report aliases for TAG */
+			aliases(ctx, tid, '\n');
+		} else {
+			/* alias tags from stdin */
+			char *line = NULL;
+			size_t llen = 0U;
+			ssize_t nrd;
+
+			while ((nrd = getline(&line, &llen, stdin)) > 0) {
+				line[nrd - 1] = '\0';
+				alias_tag(ctx, tid, line);
+			}
+			free(line);
+		}
+	} else {
+		/* show all aliases mode */
+		rotz_vtx_iter(ctx, iter_cb, ctx);
 	}
 
 fini:
