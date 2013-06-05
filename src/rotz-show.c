@@ -37,6 +37,7 @@
 #if defined HAVE_CONFIG_H
 # include "config.h"
 #endif	/* HAVE_CONFIG_H */
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -166,16 +167,51 @@ shsort(rtz_wtxlst_t wl)
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */
 
+static struct rotz_args_info argi[1];
+static union {
+	rtz_vtxlst_t vl;
+	rtz_wtxlst_t wl;
+} r = {0U};
+
+static void
+handle_one(rotz_t ctx, const char *input)
+{
+	static size_t i;
+	const char *tagsym;
+	rtz_vtx_t tsid;
+
+	if ((tagsym = rotz_tag(input),
+	     tsid = rotz_get_vertex(ctx, tagsym))) {
+		;
+	} else if ((tagsym = rotz_sym(input),
+		    tsid = rotz_get_vertex(ctx, tagsym))) {
+		;
+	} else {
+		/* nothing to worry about */
+		return;
+	}
+
+	if (argi->union_given) {
+		r.vl = rotz_union(ctx, r.vl, tsid);
+	} else if (argi->munion_given) {
+		r.wl = rotz_munion(ctx, r.wl, tsid);
+	} else if (argi->intersection_given) {
+		if (i++ > 0) {
+			r.vl = rotz_intersection(ctx, r.vl, tsid);
+		} else {
+			r.vl = rotz_get_edges(ctx, tsid);
+		}
+	} else {
+		show_tagsym(ctx, tsid);
+	}
+	return;
+}
+
 int
 main(int argc, char *argv[])
 {
-	struct rotz_args_info argi[1];
 	rotz_t ctx;
 	const char *db = "rotz.tcb";
-	union {
-		rtz_vtxlst_t vl;
-		rtz_wtxlst_t wl;
-	} r = {0U};
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -194,33 +230,28 @@ main(int argc, char *argv[])
 
 	for (unsigned int i = 0; i < argi->inputs_num; i++) {
 		const char *const input = argi->inputs[i];
-		const char *tagsym;
-		rtz_vtx_t tsid;
 
-		if ((tagsym = rotz_tag(input),
-		     tsid = rotz_get_vertex(ctx, tagsym))) {
-			;
-		} else if ((tagsym = rotz_sym(input),
-			    tsid = rotz_get_vertex(ctx, tagsym))) {
-			;
-		} else {
-			/* nothing to worry about */
-			continue;
-		}
+		handle_one(ctx, input);
+	}
+	if (argi->inputs_num == 0 && !isatty(STDIN_FILENO)) {
+		/* read the guys from STDIN */
+		char *line = NULL;
+		size_t llen = 0U;
+		ssize_t nrd;
 
-		if (argi->union_given) {
-			r.vl = rotz_union(ctx, r.vl, tsid);
-		} else if (argi->munion_given) {
-			r.wl = rotz_munion(ctx, r.wl, tsid);
-		} else if (argi->intersection_given) {
-			if (i > 0) {
-				r.vl = rotz_intersection(ctx, r.vl, tsid);
-			} else {
-				r.vl = rotz_get_edges(ctx, tsid);
-			}
-		} else {
-			show_tagsym(ctx, tsid);
+		while ((nrd = getline(&line, &llen, stdin)) > 0) {
+			line[nrd - 1] = '\0';
+			handle_one(ctx, line);
 		}
+		free(line);
+	} else if (argi->inputs_num == 0 && argi->syms_given) {
+		/* show all syms mode */
+		rotz_vtx_iter(ctx, iter_syms_cb, NULL);
+		goto fina;
+	} else if (argi->inputs_num == 0) {
+		/* show all tags mode */
+		rotz_vtx_iter(ctx, iter_cb, NULL);
+		goto fina;
 	}
 	if (argi->union_given || argi->intersection_given) {
 		prnt_vtxlst(ctx, r.vl);
@@ -229,14 +260,8 @@ main(int argc, char *argv[])
 		shsort(r.wl);
 		prnt_wtxlst(ctx, r.wl);
 	}
-	if (argi->inputs_num == 0 && argi->syms_given) {
-		/* show all syms mode */
-		rotz_vtx_iter(ctx, iter_syms_cb, NULL);
-	} else if (argi->inputs_num == 0) {
-		/* show all tags mode */
-		rotz_vtx_iter(ctx, iter_cb, NULL);
-	}
 
+fina:
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
