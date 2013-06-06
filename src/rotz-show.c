@@ -84,6 +84,20 @@ prnt_vtxlst(rotz_t ctx, rtz_vtxlst_t el)
 }
 
 static void
+prnt_vtxlst_pair(rotz_t ctx, rtz_vtxlst_t el, const char *pair)
+{
+	for (size_t j = 0; j < el.z; j++) {
+		const char *s = rotz_get_name(ctx, el.d[j]);
+
+		fputs(pair, stdout);
+		fputc('\t', stdout);
+		fputs(rotz_massage_name(s), stdout);
+		fputc('\n', stdout);
+	}
+	return;
+}
+
+static void
 prnt_wtxlst(rotz_t ctx, rtz_wtxlst_t wl)
 {
 	/* quick service */
@@ -109,6 +123,24 @@ show_tagsym(rotz_t ctx, rtz_vtx_t tsid)
 
 	/* print it */
 	prnt_vtxlst(ctx, vl);
+
+	/* get ready for the next round */
+	rotz_free_vtxlst(vl);
+	return;
+}
+
+static void
+show_tagsym_pair(rotz_t ctx, rtz_vtx_t tsid, const char *pair)
+{
+/* show all syms associated with tag vertex TSID, or
+ * all tags assoc'd with sym vertex TSID. */
+	rtz_vtxlst_t vl;
+
+	/* get all them edges and iterate */
+	vl = rotz_get_edges(ctx, tsid);
+
+	/* print it */
+	prnt_vtxlst_pair(ctx, vl, pair);
 
 	/* get ready for the next round */
 	rotz_free_vtxlst(vl);
@@ -201,6 +233,8 @@ handle_one(rotz_t ctx, const char *input)
 		} else {
 			r.vl = rotz_get_edges(ctx, tsid);
 		}
+	} else if (argi->pairs_given) {
+		show_tagsym_pair(ctx, tsid, input);
 	} else {
 		show_tagsym(ctx, tsid);
 	}
