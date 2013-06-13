@@ -66,30 +66,46 @@ del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 }
 
 static void
-del_syms(rotz_t ctx, const char *tag)
+del_vtx(rotz_t ctx, const char *v)
 {
 	rtz_vtxlst_t el;
-	rtz_vtx_t tid;
+	rtz_vtx_t vid;
 
-	/* massage tag */
-	tag = rotz_tag(tag);
-	if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
+	if (UNLIKELY((vid = rotz_get_vertex(ctx, v)) == 0U)) {
 		/* not sure what to delete */
 		return;
-	} else if (UNLIKELY((el = rotz_get_edges(ctx, tid)).d == NULL)) {
+	} else if (LIKELY((el = rotz_get_edges(ctx, vid)).d == NULL)) {
 		/* nothing to delete */
-		return;
+		;
+	} else {
+		/* get rid of all the edges */
+		rotz_rem_edges(ctx, vid);
+
+		/* now go through the list EL and delete TID */
+		for (size_t i = 0; i < el.z; i++) {
+			rotz_rem_edge(ctx, el.d[i], vid);
+		}
+		/* finalise the list */
+		rotz_free_vtxlst(el);
 	}
-	/* get rid of all the edges */
-	rotz_rem_edges(ctx, tid);
-	/* now go through the list EL and delete TID */
-	for (size_t i = 0; i < el.z; i++) {
-		rotz_rem_edge(ctx, el.d[i], tid);
-	}
-	/* finalise the list */
-	rotz_free_vtxlst(el);
 	/* finally delete the vertex */
-	rotz_rem_vertex(ctx, tag);
+	rotz_rem_vertex(ctx, v);
+	return;
+}
+
+static void
+del_syms(rotz_t ctx, const char *tag)
+{
+	/* massage tag */
+	del_vtx(ctx, rotz_tag(tag));
+	return;
+}
+
+static void
+del_sym(rotz_t ctx, const char *sym)
+{
+	/* massage sym */
+	del_vtx(ctx, rotz_sym(sym));
 	return;
 }
 
@@ -155,9 +171,16 @@ main(int argc, char *argv[])
 		size_t llen = 0U;
 		ssize_t nrd;
 
-		while ((nrd = getline(&line, &llen, stdin)) > 0) {
-			line[nrd - 1] = '\0';
-			del_syms(ctx, line);
+		if (argi->syms_given) {
+			while ((nrd = getline(&line, &llen, stdin)) > 0) {
+				line[nrd - 1] = '\0';
+				del_sym(ctx, line);
+			}
+		} else {
+			while ((nrd = getline(&line, &llen, stdin)) > 0) {
+				line[nrd - 1] = '\0';
+				del_syms(ctx, line);
+			}
 		}
 		free(line);
 	}
