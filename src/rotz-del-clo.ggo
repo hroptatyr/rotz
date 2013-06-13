@@ -4,8 +4,13 @@ usage "rotz-del [OPTIONS...] [TAG [RSYM]]..."
 description "Remove TAG from rolf symbol(s) RSYM.
 
 If RSYM is omitted on the command line, read symbols from stdin.
-If TAG is omitted on the command line delete tags read from stdin."
+If TAG is omitted on the command line delete tags read from stdin, \
+unless --syms (see below) is given."
 
 option "database" -
 	"Tagging service file or host, default: `rotz.tcb'"
 	string typestr="FILE|HOST" optional
+
+option "syms" -
+	"If no TAG or RSYM is given, delete syms instead of tags."
+	optional
