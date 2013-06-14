@@ -32,6 +32,49 @@ Command-line tools
 - `rotz-combine` Combine several separate tags into one
 - `rotz-cloud` Display tag clouds
 
+Examples
+--------
+
+Start out anywhere by adding some tags:
+
+    $ rotz-add foo bar
+    $ rotz-add foo baz
+
+Now show all associations with foo
+
+    $ rotz-show foo
+    bar
+    baz
+
+
+Show all associations of bar
+
+    $ rotz-show bar
+    foo
+
+Delete the association between foo and bar
+
+    $ rotz-del foo bar
+    $ rotz-show foo
+    baz
+
+Add a tag alias to foo, something more meaningful
+
+    $ rotz-alias foo important
+
+Find important items
+
+    $ rotz-show important
+    baz
+
+Make bar important again
+
+    $ rotz-add important bar
+    $ rotz-show foo
+    bar
+    baz
+
+
 API
 ---
 
