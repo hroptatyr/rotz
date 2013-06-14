@@ -41,6 +41,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <string.h>
+#include <fcntl.h>
 #include <tcbdb.h>
 
 #include "rotz.h"
@@ -57,11 +58,19 @@ make_rotz(const char *db, ...)
 {
 	va_list ap;
 	int omode = BDBOREADER;
+	int oparam;
 	struct rotz_s res;
 
 	va_start(ap, db);
-	omode |= va_arg(ap, int);
+	oparam = va_arg(ap, int);
 	va_end(ap);
+
+	if (oparam & O_RDWR) {
+		omode |= BDBOWRITER;
+	}
+	if (oparam & O_CREAT) {
+		omode |= BDBOCREAT;
+	}
 
 	if (UNLIKELY((res.db = tcbdbnew()) == NULL)) {
 		goto out;
