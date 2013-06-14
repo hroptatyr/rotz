@@ -75,8 +75,8 @@ Make bar important again
     baz
 
 
-API
----
+C API
+-----
 
 The API contains the usual graph operations:
 
