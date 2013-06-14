@@ -80,33 +80,44 @@ C API
 
 The API contains the usual graph operations:
 
-- `rtz_vtx_t rotz_get_vertex(rotz_t, const char *v)`
-  Identify a vertex by name and return its object handle.
-- `rtz_vtx_t rotz_add_vertex(rotz_t, const char *v)`
-  Add vertex `V` to rotz database file and return its object handle.
-- `rtz_vtx_t rotz_rem_vertex(rotz_t, const char *v)`
-  Remove vertex `V` from rotz database file and return its former object handle.
+`rtz_vtx_t rotz_get_vertex(rotz_t, const char *v)`
+:   Identify a vertex by name and return its object handle.
 
-- `int rotz_add_alias(rotz_t, rtz_vtx_t v, const char *alias)`
-  Make ALIAS an alias for vertex object `V`.
-- `int rotz_rem_alias(rotz_t, const char *alias)`
-  Remove `ALIAS` from the list of aliases associated with `ALIAS`.
-- `rtz_buf_t rotz_get_aliases(rotz_t, rtz_vtx_t v)`
-  Return the list of aliases for vertex object `V`.
+`rtz_vtx_t rotz_add_vertex(rotz_t, const char *v)`
+:   Add vertex `V` to rotz database file and return its object handle.
 
-- `int rotz_get_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to)`
-  Return non-0 iff the edge from vertex `FROM` to vertex `TO` exists.
-- `int rotz_add_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to)`
-  Add an edge from vertex `FROM` to vertex `TO`.
-- `int rotz_rem_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to)`
-  Remove an edge from vertex `FROM` to vertex `TO`.
+`rtz_vtx_t rotz_rem_vertex(rotz_t, const char *v)`
+:   Remove vertex `V` from rotz database file and return its former object handle.
 
-- `rtz_vtxlst_t rotz_get_edges(rotz_t, rtz_vtx_t v)`
-  Return all (outgoing) edges from vertex `V`.
-- `size_t rotz_get_nedges(rotz_t, rtz_vtx_t v)`
-  Return the number of (outgoing) edges from vertex `V`.
-- `int rotz_rem_edges(rotz_t, rtz_vtx_t v)`
-  Remove all (outgoing) edges from a vertex `V`.
+
+`int rotz_add_alias(rotz_t, rtz_vtx_t v, const char *alias)`
+:   Make ALIAS an alias for vertex object `V`.
+
+`int rotz_rem_alias(rotz_t, const char *alias)`
+:   Remove `ALIAS` from the list of aliases associated with `ALIAS`.
+
+`rtz_buf_t rotz_get_aliases(rotz_t, rtz_vtx_t v)`
+:   Return the list of aliases for vertex object `V`.
+
+
+`int rotz_get_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to)`
+:   Return non-0 iff the edge from vertex `FROM` to vertex `TO` exists.
+
+`int rotz_add_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to)`
+:   Add an edge from vertex `FROM` to vertex `TO`.
+
+`int rotz_rem_edge(rotz_t, rtz_vtx_t from, rtz_vtx_t to)`
+:   Remove an edge from vertex `FROM` to vertex `TO`.
+
+
+`rtz_vtxlst_t rotz_get_edges(rotz_t, rtz_vtx_t v)`
+:   Return all (outgoing) edges from vertex `V`.
+
+`size_t rotz_get_nedges(rotz_t, rtz_vtx_t v)`
+:   Return the number of (outgoing) edges from vertex `V`.
+
+`int rotz_rem_edges(rotz_t, rtz_vtx_t v)`
+:   Remove all (outgoing) edges from a vertex `V`.
 
   [1]: http://fallabs.com/tokyocabinet/
   [2]: https://github.com/stevedekorte/vertexdb
