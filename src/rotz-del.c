@@ -49,6 +49,9 @@
 #include "nifty.h"
 
 
+static int verbosep;
+#define _		rotz_massage_name
+
 static void
 del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 {
@@ -62,6 +65,13 @@ del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 	}
 	rotz_rem_edge(ctx, tid, sid);
 	rotz_rem_edge(ctx, sid, tid);
+
+	if (UNLIKELY(verbosep)) {
+		fputs(_(rotz_get_name(ctx, tid)), stdout);
+		fputc('\t', stdout);
+		fputs(_(rotz_get_name(ctx, sid)), stdout);
+		fputc('\n', stdout);
+	}
 	return;
 }
 
@@ -84,6 +94,13 @@ del_vtx(rotz_t ctx, const char *v)
 		/* now go through the list EL and delete TID */
 		for (size_t i = 0; i < el.z; i++) {
 			rotz_rem_edge(ctx, el.d[i], vid);
+
+			if (UNLIKELY(verbosep)) {
+				fputs(_(rotz_get_name(ctx, el.d[i])), stdout);
+				fputc('\t', stdout);
+				fputs(_(rotz_get_name(ctx, vid)), stdout);
+				fputc('\n', stdout);
+			}
 		}
 		/* finalise the list */
 		rotz_free_vtxlst(el);
@@ -138,6 +155,10 @@ main(int argc, char *argv[])
 	if (argi->database_given) {
 		db = argi->database_arg;
 	}
+	if (argi->verbose_given) {
+		verbosep = 1;
+	}
+
 	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
 		res = 1;
