@@ -5,6 +5,10 @@ description "Add TAG to rolf symbol(s) RSYM.
 
 If RSYM is omitted on the command line, read symbols from stdin."
 
+option "verbose" v
+	"Be verbose about the deletions made."
+	optional
+
 option "database" -
 	"Tagging service file or host, default: `rotz.tcb'"
 	string typestr="FILE|HOST" optional
