@@ -1,0 +1,13 @@
+[EXAMPLES]
+
+  Untag `foo' from `bar':
+
+    $ rotz-del foo bar
+
+  Untag `fooish' in bulk from some symbols:
+
+    $ rotz-del fooish <<EOF
+    baz
+    baraz
+    EOF
+

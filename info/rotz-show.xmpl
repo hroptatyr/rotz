@@ -1,0 +1,22 @@
+[EXAMPLES]
+
+  Provided the examples in `rotz-add(1)' have been run:
+
+    $ rotz-show foo
+    baz
+    bar
+
+  Show all associations with tag `fooish':
+
+    $ rotz-show fooish
+    bar
+    baz
+    baar
+    baraz
+
+  After the examples in `rotz-del(1)' have been run:
+
+    $ rotz-del fooish
+    bar
+    baar
+
