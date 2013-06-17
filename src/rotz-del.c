@@ -63,8 +63,6 @@ del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 	} else if (LIKELY((sid = rotz_get_vertex(ctx, symspc_sym)) == 0U)) {
 		return;
 	}
-	rotz_rem_edge(ctx, tid, sid);
-	rotz_rem_edge(ctx, sid, tid);
 
 	if (UNLIKELY(verbosep)) {
 		fputc('-', stdout);
@@ -73,6 +71,9 @@ del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 		fputs(_(rotz_get_name(ctx, sid)), stdout);
 		fputc('\n', stdout);
 	}
+
+	rotz_rem_edge(ctx, tid, sid);
+	rotz_rem_edge(ctx, sid, tid);
 	return;
 }
 
@@ -94,8 +95,6 @@ del_vtx(rotz_t ctx, const char *v)
 
 		/* now go through the list EL and delete TID */
 		for (size_t i = 0; i < el.z; i++) {
-			rotz_rem_edge(ctx, el.d[i], vid);
-
 			if (UNLIKELY(verbosep)) {
 				fputc('-', stdout);
 				fputs(_(rotz_get_name(ctx, vid)), stdout);
@@ -103,6 +102,7 @@ del_vtx(rotz_t ctx, const char *v)
 				fputs(_(rotz_get_name(ctx, el.d[i])), stdout);
 				fputc('\n', stdout);
 			}
+			rotz_rem_edge(ctx, el.d[i], vid);
 		}
 		/* finalise the list */
 		rotz_free_vtxlst(el);
