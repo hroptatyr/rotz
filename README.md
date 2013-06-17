@@ -14,6 +14,7 @@ is envisaged.
 
 + github page: <https://github.com/hroptatyr/rotz>
 + project homepage: <http://www.fresse.org/rotz/>
++ downloads: <https://bitbucket.org/hroptatyr/rotz/downloads>
 
 Command-line tools
 ------------------
