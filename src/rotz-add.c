@@ -67,6 +67,7 @@ add_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 	rotz_add_edge(ctx, sid, tid);
 
 	if (UNLIKELY(verbosep)) {
+		fputc('+', stdout);
 		fputs(_(rotz_get_name(ctx, tid)), stdout);
 		fputc('\t', stdout);
 		fputs(_(rotz_get_name(ctx, sid)), stdout);

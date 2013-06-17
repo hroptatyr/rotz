@@ -67,6 +67,7 @@ del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 	rotz_rem_edge(ctx, sid, tid);
 
 	if (UNLIKELY(verbosep)) {
+		fputc('-', stdout);
 		fputs(_(rotz_get_name(ctx, tid)), stdout);
 		fputc('\t', stdout);
 		fputs(_(rotz_get_name(ctx, sid)), stdout);
@@ -96,6 +97,7 @@ del_vtx(rotz_t ctx, const char *v)
 			rotz_rem_edge(ctx, el.d[i], vid);
 
 			if (UNLIKELY(verbosep)) {
+				fputc('-', stdout);
 				fputs(_(rotz_get_name(ctx, vid)), stdout);
 				fputc('\t', stdout);
 				fputs(_(rotz_get_name(ctx, el.d[i])), stdout);
