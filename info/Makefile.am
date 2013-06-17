@@ -46,5 +46,5 @@ VPATH += $(top_srcdir)/src
 		-I "$(srcdir)/author.h2m" \
 		-i "$(srcdir)/$*.name" \
 		-I "$(srcdir)/$*.xmpl" \
-		-o $@ $*
+		-o $@ $(top_builddir)/src/$*
 
