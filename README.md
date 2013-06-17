@@ -14,6 +14,7 @@ is envisaged.
 
 + github page: <https://github.com/hroptatyr/rotz>
 + project homepage: <http://www.fresse.org/rotz/>
++ downloads: <https://bitbucket.org/hroptatyr/rotz/downloads>
 
 Command-line tools
 ------------------
@@ -26,6 +27,7 @@ Command-line tools
 - `rotz-search` Show tags beginning with a specified prefix
 - `rotz-combine` Combine several separate tags into one
 - `rotz-cloud` Display tag clouds
+- `rotz-fsck` Check database file and optimise it
 
 Examples
 --------
