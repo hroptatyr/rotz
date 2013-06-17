@@ -61,6 +61,10 @@ del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 	if (UNLIKELY((symspc_sym = rotz_sym(sym)) == NULL)) {
 		return;
 	} else if (LIKELY((sid = rotz_get_vertex(ctx, symspc_sym)) == 0U)) {
+		if (UNLIKELY(verbosep)) {
+			fprintf(stderr, "\
+Error: cannot find sym `%s' in database file\n", sym);
+		}
 		return;
 	}
 
