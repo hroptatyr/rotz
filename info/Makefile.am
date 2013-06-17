@@ -34,6 +34,10 @@ EXTRA_DIST += rotz-search.name
 EXTRA_DIST += rotz-rename.name
 EXTRA_DIST += rotz-cloud.name
 
+EXTRA_DIST += rotz-add.xmpl
+EXTRA_DIST += rotz-del.xmpl
+EXTRA_DIST += rotz-show.xmpl
+
 VPATH += $(top_srcdir)/src
 
 ## help2man helpers
@@ -41,5 +45,6 @@ VPATH += $(top_srcdir)/src
 	$(AM_V_GEN) $(HELP2MAN) -S "$(PACKAGE_STRING)" -p "($(PACKAGE))$*" \
 		-I "$(srcdir)/author.h2m" \
 		-i "$(srcdir)/$*.name" \
-		-o $@ $*
+		-I "$(srcdir)/$*.xmpl" \
+		-o $@ $(top_builddir)/src/$*
 
