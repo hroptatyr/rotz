@@ -170,6 +170,10 @@ main(int argc, char *argv[])
 
 		tag = rotz_tag(argi->inputs[0]);
 		if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
+			if (UNLIKELY(verbosep)) {
+				fprintf(stderr, "\
+Error: cannot find tag `%s' in database file, no deletions\n", argi->inputs[0]);
+			}
 			goto fini;
 		}
 		for (unsigned int i = 1; i < argi->inputs_num; i++) {
@@ -188,6 +192,10 @@ main(int argc, char *argv[])
 
 		tag = rotz_tag(argi->inputs[0]);
 		if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
+			if (UNLIKELY(verbosep)) {
+				fprintf(stderr, "\
+Error: cannot find tag `%s' in database file, no deletions\n", argi->inputs[0]);
+			}
 			goto fini;
 		}
 
