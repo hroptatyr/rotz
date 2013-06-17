@@ -1,0 +1,17 @@
+[EXAMPLES]
+
+  Tag `bar' and `baz' with tag `foo':
+
+    $ rotz-add foo bar
+    $ rotz-add -v foo baz
+    +foo	baz
+
+  Add tag `fooish' in bulk to a list of symbols:
+
+    $ rotz-add fooish <<EOF
+    bar
+    baz
+    baar
+    baraz
+    EOF
+
