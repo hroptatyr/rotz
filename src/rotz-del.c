@@ -61,10 +61,12 @@ del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 	if (UNLIKELY((symspc_sym = rotz_sym(sym)) == NULL)) {
 		return;
 	} else if (LIKELY((sid = rotz_get_vertex(ctx, symspc_sym)) == 0U)) {
+		if (UNLIKELY(verbosep)) {
+			fprintf(stderr, "\
+Error: cannot find sym `%s' in database file\n", sym);
+		}
 		return;
 	}
-	rotz_rem_edge(ctx, tid, sid);
-	rotz_rem_edge(ctx, sid, tid);
 
 	if (UNLIKELY(verbosep)) {
 		fputc('-', stdout);
@@ -73,6 +75,9 @@ del_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 		fputs(_(rotz_get_name(ctx, sid)), stdout);
 		fputc('\n', stdout);
 	}
+
+	rotz_rem_edge(ctx, tid, sid);
+	rotz_rem_edge(ctx, sid, tid);
 	return;
 }
 
@@ -94,8 +99,6 @@ del_vtx(rotz_t ctx, const char *v)
 
 		/* now go through the list EL and delete TID */
 		for (size_t i = 0; i < el.z; i++) {
-			rotz_rem_edge(ctx, el.d[i], vid);
-
 			if (UNLIKELY(verbosep)) {
 				fputc('-', stdout);
 				fputs(_(rotz_get_name(ctx, vid)), stdout);
@@ -103,6 +106,7 @@ del_vtx(rotz_t ctx, const char *v)
 				fputs(_(rotz_get_name(ctx, el.d[i])), stdout);
 				fputc('\n', stdout);
 			}
+			rotz_rem_edge(ctx, el.d[i], vid);
 		}
 		/* finalise the list */
 		rotz_free_vtxlst(el);
@@ -145,8 +149,6 @@ main(int argc, char *argv[])
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
 	const char *db = "rotz.tcb";
-	const char *tag;
-	rtz_vtx_t tid;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -167,8 +169,15 @@ main(int argc, char *argv[])
 		goto out;
 	}
 	if (argi->inputs_num > 1) {
+		const char *tag;
+		rtz_vtx_t tid;
+
 		tag = rotz_tag(argi->inputs[0]);
 		if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
+			if (UNLIKELY(verbosep)) {
+				fprintf(stderr, "\
+Error: cannot find tag `%s' in database file, no deletions\n", argi->inputs[0]);
+			}
 			goto fini;
 		}
 		for (unsigned int i = 1; i < argi->inputs_num; i++) {
@@ -182,6 +191,17 @@ main(int argc, char *argv[])
 		char *line = NULL;
 		size_t llen = 0U;
 		ssize_t nrd;
+		const char *tag;
+		rtz_vtx_t tid;
+
+		tag = rotz_tag(argi->inputs[0]);
+		if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
+			if (UNLIKELY(verbosep)) {
+				fprintf(stderr, "\
+Error: cannot find tag `%s' in database file, no deletions\n", argi->inputs[0]);
+			}
+			goto fini;
+		}
 
 		while ((nrd = getline(&line, &llen, stdin)) > 0) {
 			line[nrd - 1] = '\0';
