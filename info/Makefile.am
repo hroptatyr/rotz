@@ -24,6 +24,7 @@ built_mans += rotz-combine.man
 built_mans += rotz-search.man
 built_mans += rotz-rename.man
 built_mans += rotz-cloud.man
+built_mans += rotz-fsck.man
 
 EXTRA_DIST += rotz-add.name
 EXTRA_DIST += rotz-del.name
@@ -33,6 +34,7 @@ EXTRA_DIST += rotz-combine.name
 EXTRA_DIST += rotz-search.name
 EXTRA_DIST += rotz-rename.name
 EXTRA_DIST += rotz-cloud.name
+EXTRA_DIST += rotz-fsck.name
 
 EXTRA_DIST += rotz-add.xmpl
 EXTRA_DIST += rotz-del.xmpl
