@@ -145,8 +145,6 @@ main(int argc, char *argv[])
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
 	const char *db = "rotz.tcb";
-	const char *tag;
-	rtz_vtx_t tid;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -167,6 +165,9 @@ main(int argc, char *argv[])
 		goto out;
 	}
 	if (argi->inputs_num > 1) {
+		const char *tag;
+		rtz_vtx_t tid;
+
 		tag = rotz_tag(argi->inputs[0]);
 		if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
 			goto fini;
@@ -182,6 +183,13 @@ main(int argc, char *argv[])
 		char *line = NULL;
 		size_t llen = 0U;
 		ssize_t nrd;
+		const char *tag;
+		rtz_vtx_t tid;
+
+		tag = rotz_tag(argi->inputs[0]);
+		if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
+			goto fini;
+		}
 
 		while ((nrd = getline(&line, &llen, stdin)) > 0) {
 			line[nrd - 1] = '\0';
