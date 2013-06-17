@@ -127,7 +127,7 @@ rotz_export_LDFLAGS += $(tokyocabinet_LIBS)
 rotz_export_LDADD = librotz.la
 BUILT_SOURCES += rotz-export-clo.c rotz-export-clo.h
 
-noinst_PROGRAMS += rotz-fsck
+bin_PROGRAMS += rotz-fsck
 rotz_fsck_SOURCES = rotz-fsck.c
 rotz_fsck_SOURCES += rotz-cmd-api.h
 rotz_fsck_SOURCES += rotz-fsck-clo.h rotz-fsck-clo.ggo

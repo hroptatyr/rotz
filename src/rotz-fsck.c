@@ -41,8 +41,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
-#include <tcbdb.h>
 #include <fcntl.h>
+#include <tcbdb.h>
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
@@ -54,33 +54,51 @@ struct rotz_s {
 
 
 static void
-fixup_vtx(rotz_t ctx)
+tcberror(rotz_t ctx, const char *premsg)
 {
-	BDBCUR *c = tcbdbcurnew(ctx->db);
-	
-	tcbdbcurjump(c, "vtx", sizeof("vtx"));
-	do {
-		char key[8];
-		int z[1];
-		const void *kp;
-		const void *vp;
+	int ecode = tcbdbecode(ctx->db);
 
-		if (UNLIKELY((kp = tcbdbcurkey3(c, z)) == NULL) ||
-		    UNLIKELY(memcmp(kp, "vtx", sizeof("vtx")))) {
-			break;
-		}
-		memcpy(key, kp, *z);
-		if (UNLIKELY((vp = tcbdbcurval3(c, z)) == NULL) ||
-		    ((const char*)vp)[*z - 1] == '\0') {
-			continue;
-		}
-
-		/* otherwise has no \nul */
-		tcbdbputcat(ctx->db, key, sizeof(key), "", 1);
-
-	} while (tcbdbcurnext(c));
-	tcbdbcurdel(c);
+	fputs(premsg, stderr);
+	fputs(tcbdberrmsg(ecode), stderr);
+	fputc('\n', stderr);
 	return;
+}
+
+static int
+dfrg(rotz_t ctx)
+{
+	if (!tcbdbdefrag(ctx->db, INT64_MAX)) {
+		return -1;
+	}
+	return 0;
+}
+
+static int
+opti(rotz_t ctx)
+{
+	/* values are taken from tcbmgr.c */
+	static struct {
+		int lmemb;
+		int nmemb;
+		int bnum;
+		int8_t apow;
+		int8_t fpow;
+		uint8_t opts;
+	} opt = {
+		.lmemb = -1,
+		.nmemb = -1,
+		.bnum = -1,
+		.apow = -1,
+		.fpow = -1,
+		.opts = UINT8_MAX,
+	};
+
+	if (!tcbdboptimize(
+		ctx->db,
+		opt.lmemb, opt.nmemb, opt.bnum, opt.apow, opt.fpow, opt.opts)) {
+		return -1;
+	}
+	return 0;
 }
 
 
@@ -116,7 +134,12 @@ main(int argc, char *argv[])
 		goto out;
 	}
 
-	fixup_vtx(ctx);
+	/* first step is to defrag, ... */
+	if (UNLIKELY(dfrg(ctx) < 0)) {
+		tcberror(ctx, "Error during defrag: ");
+	} else if (UNLIKELY(opti(ctx) < 0)) {
+		tcberror(ctx, "Error during optimisation: ");
+	}
 
 	/* big resource freeing */
 	free_rotz(ctx);
