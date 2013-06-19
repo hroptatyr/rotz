@@ -1,6 +1,6 @@
 args "--unamed-opts --no-handle-error --long-help -a rotz_args_info -f rotz_parser"
 package "rotz-search"
-usage "rotz-cloud [OPTIONS...] SEARCH_STRING"
+usage "rotz-search [OPTIONS...] SEARCH_STRING"
 description "Show all tags that start with SEARCH_STRING."
 
 option "database" -
