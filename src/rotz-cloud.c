@@ -124,7 +124,9 @@ pivot(const char *what)
 	rtz_vtxlst_t el;
 	rtz_wtxlst_t wl = {0U};
 
-	if (UNLIKELY(!(wid = rotz_get_vertex(ctx, rotz_tag(what))))) {
+	if (!(wid = rotz_get_vertex(ctx, rotz_tag(what))) &&
+	    !(wid = rotz_get_vertex(ctx, rotz_sym(what)))) {
+		/* neither sym nor tag, better bugger off */
 		return;
 	} else if (UNLIKELY((el = rotz_get_edges(ctx, wid)).d == NULL)) {
 		return;
