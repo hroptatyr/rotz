@@ -12,5 +12,5 @@ option "top" -
 	int typestr="N" optional
 
 option "pivot" -
-	"Display tags that intersect with TAG."
-	string typestr="TAG" optional
+	"Display tags/syms that intersect with TAG|SYM."
+	string typestr="TAG|SYM" optional
