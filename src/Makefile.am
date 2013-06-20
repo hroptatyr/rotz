@@ -8,7 +8,6 @@ AM_LDFLAGS = $(XCCLDFLAGS)
 bin_PROGRAMS =
 noinst_PROGRAMS =
 lib_LTLIBRARIES =
-noinst_LIBRARIES =
 noinst_LTLIBRARIES =
 pkglib_LTLIBRARIES =
 noinst_HEADERS =
@@ -27,10 +26,10 @@ librotz_la_CPPFLAGS += $(tokyocabinet_CFLAGS)
 librotz_la_LDFLAGS = $(AM_LDFLAGS)
 librotz_la_LDFLAGS += $(tokyocabinet_LIBS)
 
-noinst_LIBRARIES += libraux.a
-libraux_a_SOURCES = raux.c raux.h
-libraux_a_SOURCES += version.c version.h
-libraux_a_SOURCES += nifty.h
+noinst_LTLIBRARIES += libraux.la
+libraux_la_SOURCES = raux.c raux.h
+libraux_la_SOURCES += version.c version.h
+libraux_la_SOURCES += nifty.h
 
 bin_PROGRAMS += rotz-add
 rotz_add_SOURCES = rotz-add.c
@@ -39,7 +38,7 @@ rotz_add_SOURCES += rotz-add-clo.h rotz-add-clo.ggo
 rotz_add_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_add_LDFLAGS = $(AM_LDFLAGS)
 rotz_add_LDADD = librotz.la
-rotz_add_LDADD += libraux.a
+rotz_add_LDADD += libraux.la
 BUILT_SOURCES += rotz-add-clo.c rotz-add-clo.h
 
 bin_PROGRAMS += rotz-del
@@ -49,7 +48,7 @@ rotz_del_SOURCES += rotz-del-clo.h rotz-del-clo.ggo
 rotz_del_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_del_LDFLAGS = $(AM_LDFLAGS)
 rotz_del_LDADD = librotz.la
-rotz_del_LDADD += libraux.a
+rotz_del_LDADD += libraux.la
 BUILT_SOURCES += rotz-del-clo.c rotz-del-clo.h
 
 bin_PROGRAMS += rotz-show
@@ -59,7 +58,7 @@ rotz_show_SOURCES += rotz-show-clo.h rotz-show-clo.ggo
 rotz_show_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_show_LDFLAGS = $(AM_LDFLAGS)
 rotz_show_LDADD = librotz.la
-rotz_show_LDADD += libraux.a
+rotz_show_LDADD += libraux.la
 BUILT_SOURCES += rotz-show-clo.c rotz-show-clo.h
 
 bin_PROGRAMS += rotz-alias
@@ -69,7 +68,7 @@ rotz_alias_SOURCES += rotz-alias-clo.h rotz-alias-clo.ggo
 rotz_alias_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_alias_LDFLAGS = $(AM_LDFLAGS)
 rotz_alias_LDADD = librotz.la
-rotz_alias_LDADD += libraux.a
+rotz_alias_LDADD += libraux.la
 BUILT_SOURCES += rotz-alias-clo.c rotz-alias-clo.h
 
 bin_PROGRAMS += rotz-combine
@@ -79,7 +78,7 @@ rotz_combine_SOURCES += rotz-combine-clo.h rotz-combine-clo.ggo
 rotz_combine_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_combine_LDFLAGS = $(AM_LDFLAGS)
 rotz_combine_LDADD = librotz.la
-rotz_combine_LDADD += libraux.a
+rotz_combine_LDADD += libraux.la
 BUILT_SOURCES += rotz-combine-clo.c rotz-combine-clo.h
 
 bin_PROGRAMS += rotz-rename
@@ -89,7 +88,7 @@ rotz_rename_SOURCES += rotz-rename-clo.h rotz-rename-clo.ggo
 rotz_rename_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_rename_LDFLAGS = $(AM_LDFLAGS)
 rotz_rename_LDADD = librotz.la
-rotz_rename_LDADD += libraux.a
+rotz_rename_LDADD += libraux.la
 BUILT_SOURCES += rotz-rename-clo.c rotz-rename-clo.h
 
 bin_PROGRAMS += rotz-cloud
@@ -99,7 +98,7 @@ rotz_cloud_SOURCES += rotz-cloud-clo.h rotz-cloud-clo.ggo
 rotz_cloud_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_cloud_LDFLAGS = $(AM_LDFLAGS)
 rotz_cloud_LDADD = librotz.la
-rotz_cloud_LDADD += libraux.a
+rotz_cloud_LDADD += libraux.la
 BUILT_SOURCES += rotz-cloud-clo.c rotz-cloud-clo.h
 
 bin_PROGRAMS += rotz-search
@@ -111,7 +110,7 @@ rotz_search_CPPFLAGS += $(tokyocabinet_CFLAGS)
 rotz_search_LDFLAGS = $(AM_LDFLAGS)
 rotz_search_LDFLAGS += $(tokyocabinet_LIBS)
 rotz_search_LDADD = librotz.la
-rotz_search_LDADD += libraux.a
+rotz_search_LDADD += libraux.la
 BUILT_SOURCES += rotz-search-clo.c rotz-search-clo.h
 
 bin_PROGRAMS += rotz-export
@@ -121,7 +120,7 @@ rotz_export_SOURCES += rotz-export-clo.h rotz-export-clo.ggo
 rotz_export_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_export_LDFLAGS = $(AM_LDFLAGS)
 rotz_export_LDADD = librotz.la
-rotz_export_LDADD += libraux.a
+rotz_export_LDADD += libraux.la
 BUILT_SOURCES += rotz-export-clo.c rotz-export-clo.h
 
 bin_PROGRAMS += rotz-fsck
@@ -133,7 +132,7 @@ rotz_fsck_CPPFLAGS += $(tokyocabinet_CFLAGS)
 rotz_fsck_LDFLAGS = $(AM_LDFLAGS)
 rotz_fsck_LDFLAGS += $(tokyocabinet_LIBS)
 rotz_fsck_LDADD = librotz.la
-rotz_fsck_LDADD += libraux.a
+rotz_fsck_LDADD += libraux.la
 BUILT_SOURCES += rotz-fsck-clo.c rotz-fsck-clo.h
 
 
