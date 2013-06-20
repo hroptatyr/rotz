@@ -62,6 +62,8 @@ struct rotz_s {
 #endif	/* USE_*DB */
 };
 
+#define const_buf_t	rtz_const_buf_t
+
 
 /* low level graph lib */
 rotz_t
@@ -183,11 +185,6 @@ free_rotz(rotz_t ctx)
 typedef const unsigned char *rtz_vtxkey_t;
 #define RTZ_VTXPRE	"vtx"
 #define RTZ_VTXKEY_Z	(sizeof(RTZ_VTXPRE) + sizeof(rtz_vtx_t))
-
-typedef struct {
-	size_t z;
-	const char *d;
-} const_buf_t;
 
 static rtz_vtxkey_t
 rtz_vtxkey(rtz_vtx_t vid)
@@ -1319,6 +1316,84 @@ out0:
 
 	tcbdbcurdel(c);
 	rotz_free_vtxlst(vl);
+#endif	/* USE_*DB */
+	return;
+}
+
+void
+rotz_iter(
+	rotz_t ctx, rtz_const_buf_t prfx_match,
+	int(*cb)(rtz_const_buf_t key, rtz_const_buf_t val, void*), void *clo)
+{
+#if defined USE_LMDB
+	MDB_txn *txn;
+	MDB_cursor *crs;
+	MDB_val key = {
+		.mv_size = prfx_match.z,
+		.mv_data = prfx_match.d,
+	};
+	MDB_val val;
+
+	/* get us a transaction and a cursor */
+	mdb_txn_begin(ctx->db, NULL, MDB_RDONLY, &txn);
+	if (mdb_cursor_open(txn, ctx->dbi, &crs) != 0) {
+		goto out0;
+	} else if (mdb_cursor_get(crs, &key, NULL, MDB_SET_RANGE) != 0) {
+		goto out1;
+	} else if (mdb_cursor_get(crs, &key, &val, MDB_GET_CURRENT) != 0) {
+		goto out2;
+	}
+
+#define B	(const_buf_t)
+	do {
+		const_buf_t kb;
+		const_buf_t vb;
+
+		if (UNLIKELY(memcmp(key.mv_data, prfx_match.d, prfx_match.z))) {
+			break;
+		}
+		/* otherwise pack the bufs and call the callback */
+		kb = B{key.mv_size, key.mv_data};
+		vb = B{val.mv_size, val.mv_data};
+		if (UNLIKELY(cb(kb, vb, clo) < 0)) {
+			break;
+		}
+	} while (mdb_cursor_get(crs, &key, &val, MDB_NEXT) == 0);
+#undef B
+
+out2:
+out1:
+	/* cursor finalising */
+	mdb_cursor_close(crs);
+out0:
+	/* and out */
+	mdb_txn_abort(txn);
+
+#elif defined USE_TCBDB
+	BDBCUR *c = tcbdbcurnew(ctx->db);
+
+#define B	(const_buf_t)
+	tcbdbcurjump(c, prfx_match.d, prfx_match.z);
+	do {
+		int z[2];
+		const void *kp;
+		const void *vp;
+
+		if (UNLIKELY((kp = tcbdbcurkey3(c, z + 0)) == NULL) ||
+		    UNLIKELY(memcmp(kp, prfx_match.d, prfx_match.z))) {
+			break;
+		} else if (UNLIKELY((vp = tcbdbcurval3(c, z + 1)) == NULL)) {
+			continue;
+		}
+		/* otherwise just call the callback */
+		if (UNLIKELY(cb(B{z[0], kp}, B{z[1], vp}, clo) < 0)) {
+			break;
+		}
+
+	} while (tcbdbcurnext(c));
+#undef B
+
+	tcbdbcurdel(c);
 #endif	/* USE_*DB */
 	return;
 }
