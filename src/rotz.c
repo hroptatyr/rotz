@@ -311,7 +311,7 @@ get_vertex(rotz_t cp, const char *v, size_t z)
 	MDB_val val;
 
 	/* get us a transaction */
-	mdb_txn_begin(cp->db, NULL, 0, &txn);
+	mdb_txn_begin(cp->db, NULL, MDB_RDONLY, &txn);
 
 	if (UNLIKELY(mdb_get(txn, cp->dbi, &key, &val) != 0)) {
 		res = 0U;
@@ -596,7 +596,7 @@ get_aliases(rotz_t cp, rtz_vtxkey_t svtx)
 	MDB_txn *txn;
 
 	/* get us a transaction */
-	mdb_txn_begin(cp->db, NULL, 0, &txn);
+	mdb_txn_begin(cp->db, NULL, MDB_RDONLY, &txn);
 
 	if (UNLIKELY(mdb_get(txn, cp->dbi, &key, &val) < 0)) {
 		res = (const_buf_t){0U};
@@ -875,7 +875,7 @@ get_edges(rotz_t ctx, rtz_edgkey_t src)
 	MDB_txn *txn;
 
 	/* get us a transaction */
-	mdb_txn_begin(ctx->db, NULL, 0, &txn);
+	mdb_txn_begin(ctx->db, NULL, MDB_RDONLY, &txn);
 
 	if (UNLIKELY(mdb_get(txn, ctx->dbi, &key, &val) < 0)) {
 		res = (const_vtxlst_t){0U};
