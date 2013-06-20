@@ -880,7 +880,10 @@ get_edges(rotz_t ctx, rtz_edgkey_t src)
 	if (UNLIKELY(mdb_get(txn, ctx->dbi, &key, &val) < 0)) {
 		res = (const_vtxlst_t){0U};
 	} else {
-		res = (const_vtxlst_t){.z = val.mv_size, .d = val.mv_data};
+		res = (const_vtxlst_t){
+			.z = val.mv_size / sizeof(rtz_vtx_t),
+			.d = val.mv_data
+		};
 	}
 
 	/* and commit */
