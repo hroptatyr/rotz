@@ -46,6 +46,8 @@
 # include <lmdb.h>
 #elif defined USE_TCBDB
 # include <tcbdb.h>
+#else
+# error need a database backend
 #endif	/* USE_*DB */
 
 #include "rotz.h"
