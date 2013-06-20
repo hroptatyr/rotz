@@ -45,6 +45,7 @@
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
+#include "raux.h"
 #include "nifty.h"
 
 
@@ -144,47 +145,6 @@ show_tagsym_pair(rotz_t ctx, rtz_vtx_t tsid, const char *pair)
 
 	/* get ready for the next round */
 	rotz_free_vtxlst(vl);
-	return;
-}
-
-static inline void
-shsort_gap(rtz_wtxlst_t wl, unsigned int gap)
-{
-	for (size_t i = gap; i < wl.z; i++) {
-		unsigned int wi = wl.w[i];
-		unsigned int di = wl.d[i];
-		unsigned int j;
-
-		for (j = i; j >= gap && wi > wl.w[j - gap]; j -= gap) {
-			wl.w[j] = wl.w[j - gap];
-			wl.d[j] = wl.d[j - gap];
-		}
-		wl.w[j] = wi;
-		wl.d[j] = di;
-	}
-	return;
-}
-
-static void
-shsort(rtz_wtxlst_t wl)
-{
-	/* Ciura's gap sequence */
-	static const unsigned int gaps[] = {
-		701U, 301U, 132U, 57U, 23U, 10U, 4U, 1U
-	};
-	unsigned int h = gaps[0];
-
-	/* extending the gap sequence by h_k <- 2.25h_{k-1} */
-	for (unsigned int nx;
-	     (nx = (unsigned int)(2.25 * (float)h)) < wl.z; h = nx);
-	/* first go through the extended list */
-	for (; h > gaps[0]; h = (unsigned int)((float)h / 2.25)) {
-		shsort_gap(wl, h);
-	}
-	/* then resort to Ciura's list */
-	for (size_t i = 0; i < countof(gaps); i++) {
-		shsort_gap(wl, gaps[i]);
-	}
 	return;
 }
 
@@ -291,7 +251,7 @@ main(int argc, char *argv[])
 		prnt_vtxlst(ctx, r.vl);
 	} else if (argi->munion_given) {
 		/* quick service, sort r.wl, could be an option */
-		shsort(r.wl);
+		sort_wtxlst(r.wl);
 		prnt_wtxlst(ctx, r.wl);
 	}
 
