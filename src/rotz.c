@@ -544,7 +544,7 @@ add_akalst(rotz_t ctx, rtz_vtxkey_t ak, const_buf_t al)
 	};
 	MDB_val val = {
 		.mv_size = al.z * sizeof(*al.d),
-		.mv_data = al.z,
+		.mv_data = al.d,
 	};
 	MDB_txn *txn;
 
