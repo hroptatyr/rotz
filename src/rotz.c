@@ -69,7 +69,7 @@ make_rotz(const char *db, ...)
 {
 #if defined USE_LMDB
 	va_list ap;
-	int omode = MDB_RDONLY;
+	int omode = MDB_RDONLY | MDB_NOTLS | MDB_NOSUBDIR;
 	int dmode = 0;
 	int oparam;
 	struct rotz_s res;
@@ -80,7 +80,8 @@ make_rotz(const char *db, ...)
 	va_end(ap);
 
 	if (oparam & O_RDWR) {
-		omode = 0;
+		omode &= ~MDB_RDONLY;
+		omode |= MDB_WRITEMAP | MDB_MAPASYNC;
 	}
 	if (oparam & O_CREAT) {
 		dmode |= MDB_CREATE;
@@ -90,13 +91,13 @@ make_rotz(const char *db, ...)
 		goto out0;
 	} else if (UNLIKELY(mdb_env_open(res.db, db, omode, 0644) != 0)) {
 		goto out1;
-	} else if (UNLIKELY(mdb_txn_begin(res.db, NULL, 0, &txn) != 0)) {
+	} else if (UNLIKELY(mdb_txn_begin(res.db, NULL, MDB_RDONLY, &txn) != 0)) {
 		goto out2;
 	} else if (UNLIKELY(mdb_dbi_open(txn, NULL, dmode, &res.dbi) != 0)) {
 		goto out3;
 	}
 	/* just finalise the transaction now */
-	mdb_txn_commit(txn);
+	mdb_txn_abort(txn);
 
 	/* clone the result */
 	{
@@ -156,6 +157,7 @@ free_rotz(rotz_t ctx)
 {
 #if defined USE_LMDB
 	mdb_close(ctx->db, ctx->dbi);
+	mdb_env_sync(ctx->db, 1/*force synchronous*/);
 	mdb_env_close(ctx->db);
 #elif defined USE_TCBDB
 	tcbdbclose(ctx->db);
