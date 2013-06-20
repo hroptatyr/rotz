@@ -604,6 +604,7 @@ get_aliases(rotz_t cp, rtz_vtxkey_t svtx)
 	mdb_txn_commit(txn);
 
 #elif defined USE_TCBDB
+	const void *sp;
 	int z[1];
 
 	if (UNLIKELY((sp = tcbdbget3(cp->db, svtx, RTZ_VTXKEY_Z, z)) == NULL)) {
