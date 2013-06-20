@@ -859,13 +859,39 @@ rtz_edg(rtz_edgkey_t edg)
 static const_vtxlst_t
 get_edges(rotz_t ctx, rtz_edgkey_t src)
 {
+	const_vtxlst_t res;
+
+#if defined USE_LMDB
+	MDB_val key = {
+		.mv_size = RTZ_EDGKEY_Z,
+		.mv_data = src,
+	};
+	MDB_val val;
+	MDB_txn *txn;
+
+	/* get us a transaction */
+	mdb_txn_begin(ctx->db, NULL, 0, &txn);
+
+	if (UNLIKELY(mdb_get(txn, ctx->dbi, &key, &val) < 0)) {
+		res = (const_vtxlst_t){0U};
+	} else {
+		res = (const_vtxlst_t){.z = val.mv_size, .d = val.mv_data};
+	}
+
+	/* and commit */
+	mdb_txn_commit(txn);
+
+#elif defined USE_TCBDB
 	const void *sp;
 	int z[1];
 
 	if (UNLIKELY((sp = tcbdbget3(ctx->db, src, RTZ_EDGKEY_Z, z)) == NULL)) {
 		return (const_vtxlst_t){0U};
 	}
-	return (const_vtxlst_t){.z = (size_t)*z / sizeof(rtz_vtx_t), .d = sp};
+	res = (const_vtxlst_t){.z = (size_t)*z / sizeof(rtz_vtx_t), .d = sp};
+#endif	/* USE_*DB */
+
+	return res;
 }
 
 static size_t
@@ -910,24 +936,109 @@ rem_from_vtxlst(const_vtxlst_t el, size_t idx)
 static int
 add_edge(rotz_t ctx, rtz_edgkey_t src, rtz_vtx_t to)
 {
-	return tcbdbputcat(ctx->db, src, RTZ_EDGKEY_Z, &to, sizeof(to)) - 1;
+	int res = 0;
+
+#if defined USE_LMDB
+	MDB_val key = {
+		.mv_size = RTZ_EDGKEY_Z,
+		.mv_data = src,
+	};
+	MDB_val val = {
+		.mv_size = sizeof(to),
+		.mv_data = &to,
+	};
+	MDB_txn *txn;
+
+	/* get us a transaction */
+	mdb_txn_begin(ctx->db, NULL, 0, &txn);
+
+	if (mdb_putcat(txn, ctx->dbi, &key, &val) != 0) {
+		res = -1;
+	}
+
+	/* and commit */
+	mdb_txn_commit(txn);
+
+#elif defined USE_TCBDB
+	res = tcbdbputcat(ctx->db, src, RTZ_EDGKEY_Z, &to, sizeof(to)) - 1;
+#endif	/* USE_*DB */
+
+	return res;
 }
 
 static int
 add_vtxlst(rotz_t ctx, rtz_edgkey_t src, const_vtxlst_t el)
 {
+	int res = 0;
+
+#if defined USE_LMDB
+	MDB_val key = {
+		.mv_size = RTZ_EDGKEY_Z,
+		.mv_data = src,
+	};
+	MDB_val val = {
+		.mv_size = el.z,
+		.mv_data = el.d,
+	};
+	MDB_txn *txn;
+
+	/* get us a transaction */
+	mdb_txn_begin(ctx->db, NULL, 0, &txn);
+
+	/* first delete the old guy */
+	if (mdb_del(txn, ctx->dbi, &key, NULL) != 0) {
+		/* ok, we're fucked */
+		res = -1;
+	} else if (UNLIKELY(val.mv_size == 0U)) {
+		/* leave it del'd */
+		;
+	} else if (mdb_put(txn, ctx->dbi, &key, &val, 0) != 0) {
+		/* putting the new list failed */
+		res = -1;
+	}
+
+	/* and commit */
+	mdb_txn_commit(txn);
+
+#elif defined USE_TCBDB
 	size_t z;
 
 	if (UNLIKELY((z = el.z * sizeof(*el.d)) == 0U)) {
 		return tcbdbout(ctx->db, src, RTZ_EDGKEY_Z) - 1;
 	}
-	return tcbdbput(ctx->db, src, RTZ_EDGKEY_Z, el.d, z) - 1;
+	res = tcbdbput(ctx->db, src, RTZ_EDGKEY_Z, el.d, z) - 1;
+#endif	/* USE_*DB */
+
+	return res;
 }
 
 static int
 rem_edges(rotz_t ctx, rtz_edgkey_t src)
 {
-	return tcbdbout(ctx->db, src, RTZ_EDGKEY_Z) - 1;
+	int res = 0;
+
+#if defined USE_LMDB
+	MDB_val key = {
+		.mv_size = RTZ_EDGKEY_Z,
+		.mv_data = src,
+	};
+	MDB_txn *txn;
+
+	/* get us a transaction */
+	mdb_txn_begin(ctx->db, NULL, 0, &txn);
+
+	if (UNLIKELY(mdb_del(txn, ctx->dbi, &key, NULL) != 0)) {
+		res = -1;
+	}
+
+	/* and commit */
+	mdb_txn_commit(txn);
+
+#elif defined USE_TCBDB
+	res = tcbdbout(ctx->db, src, RTZ_EDGKEY_Z) - 1;
+#endif	/* USE_*DB */
+
+	return res;
 }
 
 /* API */
