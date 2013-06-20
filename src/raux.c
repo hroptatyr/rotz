@@ -61,9 +61,9 @@ shsort_gap(rtz_wtxlst_t wl, unsigned int gap)
 }
 
 void
-shsort(rtz_wtxlst_t wl)
+sort_wtxlst(rtz_wtxlst_t wl)
 {
-	/* Ciura's gap sequence */
+/* simple shell sort with Ciura's gap sequence */
 	static const unsigned int gaps[] = {
 		701U, 301U, 132U, 57U, 23U, 10U, 4U, 1U
 	};

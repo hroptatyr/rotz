@@ -41,6 +41,6 @@
 
 /**
  * Sort the entries by their weight (descending). */
-extern void shsort(rtz_wtxlst_t);
+extern void sort_wtxlst(rtz_wtxlst_t);
 
 #endif	/* INCLUDED_raux_h_ */
