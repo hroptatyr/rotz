@@ -464,6 +464,41 @@ unrnm_vertex(rotz_t cp, rtz_vtxkey_t vkey)
 	return res;
 }
 
+#if defined USE_LMDB
+static int
+mdb_putcat(MDB_txn *txn, MDB_dbi dbi, MDB_val *key, MDB_val *data)
+{
+	MDB_val getval = {0U};
+	MDB_val putval;
+
+	switch (mdb_get(txn, dbi, key, &getval)) {
+	default:
+		return -1;
+	case MDB_NOTFOUND:
+		/* put mode */
+		break;
+	case 0:
+		/* append mode */
+		break;
+	}
+
+	putval = (MDB_val){.mv_size = getval.mv_size + data->mv_size, NULL};
+
+	/* now put it back in the pool */
+	if (mdb_put(txn, dbi, key, &putval, MDB_RESERVE) != 0) {
+		return -1;
+	}
+
+	with (char *restrict pp = putval.mv_data) {
+		/* copy the original data first */
+		memcpy(pp, getval.mv_data, getval.mv_size);
+		/* append the new guy */
+		memcpy(pp + getval.mv_size, data->mv_data, data->mv_size);
+	}
+	return 0;
+}
+#endif	/* USE_LMDB */
+
 static int
 add_alias(rotz_t cp, rtz_vtxkey_t vkey, const char *a, size_t az)
 {
@@ -483,12 +518,8 @@ add_alias(rotz_t cp, rtz_vtxkey_t vkey, const char *a, size_t az)
 	/* get us a transaction */
 	mdb_txn_begin(cp->db, NULL, 0, &txn);
 
-	switch (mdb_put(txn, cp->dbi, &key, &val, MDB_NODUPDATA) != 0) {
-	default:
+	if (mdb_putcat(txn, cp->dbi, &key, &val) != 0) {
 		res = -1;
-	case 0:
-	case MDB_KEYEXIST:
-		break;
 	}
 
 	/* and commit */
@@ -564,10 +595,10 @@ get_aliases(rotz_t cp, rtz_vtxkey_t svtx)
 	mdb_txn_begin(cp->db, NULL, 0, &txn);
 
 	if (UNLIKELY(mdb_get(txn, cp->dbi, &key, &val) < 0)) {
-		return (const_buf_t){0U};
+		res = (const_buf_t){0U};
+	} else {
+		res = (const_buf_t){.z = val.mv_size, .d = val.mv_data};
 	}
-
-	res = (const_buf_t){.z = val.mv_size, .d = val.mv_data};
 
 	/* and commit */
 	mdb_txn_commit(txn);
