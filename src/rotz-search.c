@@ -41,56 +41,43 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
-#include <tcbdb.h>
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
 #include "nifty.h"
 
-struct rotz_s {
-	TCBDB *db;
-};
-
 struct iter_clo_s {
-	struct {
-		size_t z;
-		const char *d;
-	} pre;
-
+	rotz_t ctx;
+	rtz_const_buf_t prfx;
 	size_t ntop;
 	unsigned int show_numbers;
 };
 
 
+static int
+iter_cb(rtz_const_buf_t k, rtz_const_buf_t v, void *clo)
+{
+	static size_t iter;
+	const struct iter_clo_s *cp = clo;
+
+	/* just print the name and stats */
+	fputs(rotz_massage_name(k.d), stdout);
+	if (cp->show_numbers) {
+		/* get the number also */
+		const rtz_vtx_t *vp = (const void*)v.d;
+
+		fputc('\t', stdout);
+		fprintf(stdout, "%zu", rotz_get_nedges(cp->ctx, *vp));
+	}
+	fputc('\n', stdout);
+	iter++;
+	return 0;
+}
+
 static void
 iter(rotz_t ctx, const struct iter_clo_s *clo)
 {
-	static size_t iter;
-	BDBCUR *c = tcbdbcurnew(ctx->db);
-
-	tcbdbcurjump(c, clo->pre.d, clo->pre.z);
-	iter = 0;
-	do {
-		int z[1];
-		const void *kp;
-
-		if (UNLIKELY((kp = tcbdbcurkey3(c, z)) == NULL) ||
-		    UNLIKELY(memcmp(kp, clo->pre.d, clo->pre.z))) {
-			break;
-		}
-		/* just print the name and stats */
-		fputs(rotz_massage_name(kp), stdout);
-		if (clo->show_numbers) {
-			/* get the number also */
-			const rtz_vtx_t *vp = tcbdbcurval3(c, z);
-			fputc('\t', stdout);
-			fprintf(stdout, "%zu", rotz_get_nedges(ctx, *vp));
-		}
-		fputc('\n', stdout);
-		iter++;
-	} while (tcbdbcurnext(c));
-
-	tcbdbcurdel(c);
+	rotz_iter(ctx, clo->prfx, iter_cb, clo);
 	return;
 }
 
@@ -110,7 +97,7 @@ main(int argc, char *argv[])
 {
 	static struct iter_clo_s clo[1];
 	struct rotz_args_info argi[1];
-	const char *db = "rotz.tcb";
+	const char *db = RTZ_DFLT_DB;
 	rotz_t ctx;
 	int res = 0;
 
@@ -132,8 +119,9 @@ main(int argc, char *argv[])
 	}
 
 	/* cloud all tags mode, undocumented prefix feature */
-	clo->pre.d = rotz_tag(argi->inputs[0]);
-	clo->pre.z = strlen(clo->pre.d);
+	clo->ctx = ctx;
+	clo->prfx.d = rotz_tag(argi->inputs[0]);
+	clo->prfx.z = strlen(clo->prfx.d);
 	clo->show_numbers = 1;
 
 	if (argi->top_given) {

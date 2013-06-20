@@ -109,7 +109,7 @@ main(int argc, char *argv[])
 {
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
-	const char *db = "rotz.tcb";
+	const char *db = RTZ_DFLT_DB;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {

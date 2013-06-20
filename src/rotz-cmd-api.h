@@ -46,6 +46,14 @@
 #define RTZ_SYMSPC	":::"
 #define RTZ_PRE_Z	(4U)
 
+#if defined USE_LMDB
+# define RTZ_DFLT_DB	"rotz.mdb"
+#elif defined USE_TCBDB
+# define RTZ_DFLT_DB	"rotz.tcb"
+#else
+# error cannot define default database file name
+#endif	/* USE_*DB */
+
 
 /* namespacify our objects */
 /* lib stuff? */

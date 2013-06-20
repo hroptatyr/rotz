@@ -70,6 +70,11 @@ typedef struct {
 	char *d;
 } rtz_buf_t;
 
+typedef struct {
+	size_t z;
+	const char *d;
+} rtz_const_buf_t;
+
 
 /* lower level graph api */
 extern rotz_t make_rotz(const char *dbfile, ...);
@@ -165,6 +170,13 @@ rotz_vtx_iter(rotz_t, int(*cb)(rtz_vtx_t, const char*, void*), void *clo);
  * and must not be freed. */
 extern void
 rotz_edg_iter(rotz_t, int(*cb)(rtz_vtx_t, rtz_const_vtxlst_t, void*), void *C);
+
+/**
+ * Generic iterator, too secret to be documented. */
+extern void
+rotz_iter(
+	rotz_t, rtz_const_buf_t prfx_match,
+	int(*cb)(rtz_const_buf_t key, rtz_const_buf_t val, void*), void *C);
 
 
 /* set operations */
