@@ -110,7 +110,7 @@ main(int argc, char *argv[])
 {
 	static struct iter_clo_s clo[1];
 	struct rotz_args_info argi[1];
-	const char *db = "rotz.tcb";
+	const char *db = RTZ_DFLT_DB;
 	rotz_t ctx;
 	int res = 0;
 
