@@ -1167,6 +1167,46 @@ rotz_rem_edge(rotz_t ctx, rtz_vtx_t from, rtz_vtx_t to)
 void
 rotz_vtx_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const char*, void*), void *clo)
 {
+#if defined USE_LMDB
+	MDB_txn *txn;
+	MDB_cursor *crs;
+	MDB_val key = {
+		.mv_size = sizeof(RTZ_VTXPRE),
+		.mv_data = RTZ_VTXPRE,
+	};
+	MDB_val val;
+
+	/* get us a transaction and a cursor */
+	mdb_txn_begin(ctx->db, NULL, MDB_RDONLY, &txn);
+	if (mdb_cursor_open(txn, ctx->dbi, &crs) != 0) {
+		goto out0;
+	} else if (mdb_cursor_get(crs, &key, NULL, MDB_SET_RANGE) != 0) {
+		goto out1;
+	} else if (mdb_cursor_get(crs, &key, &val, MDB_GET_CURRENT) != 0) {
+		goto out2;
+	}
+	do {
+		rtz_vtx_t vid;
+
+		if (UNLIKELY(key.mv_size != sizeof(RTZ_VTXPRE) + sizeof(vid)) ||
+		    UNLIKELY(!(vid = rtz_vtx(key.mv_data)))) {
+			break;
+		}
+		/* otherwise just call the callback */
+		if (UNLIKELY(cb(vid, val.mv_data, clo) < 0)) {
+			break;
+		}
+	} while (mdb_cursor_get(crs, &key, &val, MDB_NEXT) == 0);
+
+out2:
+out1:
+	/* cursor finalising */
+	mdb_cursor_close(crs);
+out0:
+	/* and out */
+	mdb_txn_abort(txn);
+
+#elif defined USE_TCBDB
 	BDBCUR *c = tcbdbcurnew(ctx->db);
 
 	tcbdbcurjump(c, RTZ_VTXPRE, sizeof(RTZ_VTXPRE));
@@ -1191,12 +1231,59 @@ rotz_vtx_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const char*, void*), void *clo)
 	} while (tcbdbcurnext(c));
 
 	tcbdbcurdel(c);
+#endif	/* USE_*DB */
 	return;
 }
 
 void
 rotz_edg_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const_vtxlst_t, void*), void *clo)
 {
+#if defined USE_LMDB
+	MDB_txn *txn;
+	MDB_cursor *crs;
+	MDB_val key = {
+		.mv_size = sizeof(RTZ_EDGPRE),
+		.mv_data = RTZ_EDGPRE,
+	};
+	MDB_val val;
+
+	/* get us a transaction and a cursor */
+	mdb_txn_begin(ctx->db, NULL, MDB_RDONLY, &txn);
+	if (mdb_cursor_open(txn, ctx->dbi, &crs) != 0) {
+		goto out0;
+	} else if (mdb_cursor_get(crs, &key, NULL, MDB_SET_RANGE) != 0) {
+		goto out1;
+	} else if (mdb_cursor_get(crs, &key, &val, MDB_GET_CURRENT) != 0) {
+		goto out2;
+	}
+	do {
+		rtz_vtx_t eid;
+		const_vtxlst_t cvl;
+
+		if (UNLIKELY(key.mv_size != sizeof(RTZ_EDGPRE) + sizeof(eid)) ||
+		    UNLIKELY(!(eid = rtz_edg(key.mv_data)))) {
+			break;
+		}
+		/* ctor the vl */
+		cvl = (const_vtxlst_t){
+			.z = val.mv_size / sizeof(*cvl.d),
+			.d = val.mv_data,
+		};
+		/* otherwise just call the callback */
+		if (UNLIKELY(cb(eid, cvl, clo) < 0)) {
+			break;
+		}
+	} while (mdb_cursor_get(crs, &key, &val, MDB_NEXT) == 0);
+
+out2:
+out1:
+	/* cursor finalising */
+	mdb_cursor_close(crs);
+out0:
+	/* and out */
+	mdb_txn_abort(txn);
+
+#elif defined USE_TCBDB
 	rtz_vtxlst_t vl = {.z = 0U};
 	BDBCUR *c = tcbdbcurnew(ctx->db);
 
@@ -1232,6 +1319,7 @@ rotz_edg_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const_vtxlst_t, void*), void *clo)
 
 	tcbdbcurdel(c);
 	rotz_free_vtxlst(vl);
+#endif	/* USE_*DB */
 	return;
 }
 
