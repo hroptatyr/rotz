@@ -39,7 +39,24 @@ AC_C_BIGENDIAN
 
 AM_MISSING_PROG([HELP2MAN], [help2man], ["${missing_dir}"])
 
-PKG_CHECK_MODULES([tokyocabinet], [tokyocabinet])
+AC_ARG_WITH([database], [dnl
+AS_HELP_STRING([--with-database], [
+db backend to use, one of tokyo(cabinet), lmdb])],
+	[with_database="${withval}"], [with_database="tokyo"])
+
+case "${with_database}" in
+("tokyo"*)
+	PKG_CHECK_MODULES([tokyocabinet], [tokyocabinet])
+	AC_DEFINE([USE_TCBDB], [1], [define when tokyocabinet shall be db backend])
+	;;
+("lmbd")
+	PKG_CHECK_MODULES([lmdb], [lmdb])
+	AC_DEFINE([USE_LMDB], [1], [define when lmdb shall be db backend])
+	;;
+(*)
+	AC_MSG_ERROR([no such database backend \`${with_database}'])
+	;;
+esac
 
 ## libtool goddess^Wgoodness
 ## has to be down here as we're turning -Werror'ing off
