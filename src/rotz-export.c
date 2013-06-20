@@ -50,6 +50,35 @@ static int clusterp;
 
 
 static int
+iter_csv_cb(rtz_vtx_t vid, rtz_const_vtxlst_t vl, void *clo)
+{
+	rtz_buf_t n = rotz_get_name_r(clo, vid);
+	const char *vtx = n.d;
+
+	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
+		/* that's a symbol, vtx would be a tag then */
+		return 0;
+	} else if (memcmp(vtx, RTZ_TAGSPC, sizeof(RTZ_TAGSPC) - 1) == 0) {
+		vtx += RTZ_PRE_Z;
+	} else if (clusterp) {
+		char *p = strchr(vtx, ':');
+		*p = '\0';
+	}
+
+	for (size_t i = 0; i < vl.z; i++) {
+		const char *vld = rotz_get_name(clo, vl.d[i]);
+		const char *tgt = rotz_massage_name(vld);
+
+		fputs(vtx, stdout);
+		fputc('\t', stdout);
+		fputs(tgt, stdout);
+		fputc('\n', stdout);
+	}
+	rotz_free_r(n);
+	return 0;
+}
+
+static int
 iter_dot_cb(rtz_vtx_t vid, rtz_const_vtxlst_t vl, void *clo)
 {
 	rtz_buf_t n = rotz_get_name_r(clo, vid);
@@ -105,6 +134,14 @@ iter_gmle_cb(rtz_vtx_t sid, rtz_const_vtxlst_t vl, void *clo)
   ]\n", sid, tid);
 	}
 	return 0;
+}
+
+static void
+xprt_csv(rotz_t ctx)
+{
+	/* go through all edges */
+	rotz_edg_iter(ctx, iter_csv_cb, ctx);
+	return;
 }
 
 static void
@@ -175,9 +212,11 @@ main(int argc, char *argv[])
 
 	if (argi->gml_given) {
 		xprt_gml(ctx);
-	} else if (argi->dot_given || 1) {
-		/* default file format is dot */
+	} else if (argi->dot_given) {
 		xprt_dot(ctx);
+	} else {
+		/* default file format is csv */
+		xprt_csv(ctx);
 	}
 
 	/* big resource freeing */
