@@ -42,19 +42,38 @@
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <tcbdb.h>
+#if defined USE_TCBDB
+# include <tcbdb.h>
+#endif	/* USE_TCBDB */
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
 #include "nifty.h"
 
-struct rotz_s {
-	TCBDB *db;
-};
-
 
+#if defined USE_LMDB
 static void
-tcberror(rotz_t ctx, const char *premsg)
+dberror(rotz_t UNUSED(ctx), const char *premsg)
+{
+	fputs(premsg, stderr);
+	fputc('\n', stderr);
+	return;
+}
+
+static int
+dfrg(rotz_t UNUSED(ctx))
+{
+	return 0;
+}
+
+static int
+opti(rotz_t UNUSED(ctx))
+{
+	return 0;
+}
+#elif defined USE_TCBDB
+static void
+dberror(rotz_t ctx, const char *premsg)
 {
 	int ecode = tcbdbecode(ctx->db);
 
@@ -100,6 +119,7 @@ opti(rotz_t ctx)
 	}
 	return 0;
 }
+#endif	/* USE_TCBDB */
 
 
 #if defined STANDALONE
@@ -116,7 +136,7 @@ int
 main(int argc, char *argv[])
 {
 	struct rotz_args_info argi[1];
-	const char *db = "rotz.tcb";
+	const char *db = RTZ_DFLT_DB;
 	rotz_t ctx;
 	int res = 0;
 
@@ -136,9 +156,9 @@ main(int argc, char *argv[])
 
 	/* first step is to defrag, ... */
 	if (UNLIKELY(dfrg(ctx) < 0)) {
-		tcberror(ctx, "Error during defrag: ");
+		dberror(ctx, "Error during defrag: ");
 	} else if (UNLIKELY(opti(ctx) < 0)) {
-		tcberror(ctx, "Error during optimisation: ");
+		dberror(ctx, "Error during optimisation: ");
 	}
 
 	/* big resource freeing */

@@ -205,7 +205,7 @@ int
 main(int argc, char *argv[])
 {
 	rotz_t ctx;
-	const char *db = "rotz.tcb";
+	const char *db = RTZ_DFLT_DB;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {

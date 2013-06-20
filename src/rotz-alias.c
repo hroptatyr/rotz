@@ -106,7 +106,7 @@ main(int argc, char *argv[])
 {
 	struct rotz_args_info argi[1];
 	rotz_t ctx;
-	const char *db = "rotz.tcb";
+	const char *db = RTZ_DFLT_DB;
 	const char *tag;
 	rtz_vtx_t tid;
 	int res = 0;

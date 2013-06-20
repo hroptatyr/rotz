@@ -23,8 +23,10 @@ librotz_la_SOURCES = rotz.c rotz.h
 librotz_la_SOURCES += nifty.h
 librotz_la_CPPFLAGS = $(AM_CPPFLAGS)
 librotz_la_CPPFLAGS += $(tokyocabinet_CFLAGS)
+librotz_la_CPPFLAGS += $(lmdb_CFLAGS)
 librotz_la_LDFLAGS = $(AM_LDFLAGS)
 librotz_la_LDFLAGS += $(tokyocabinet_LIBS)
+librotz_la_LDFLAGS += $(lmdb_LIBS)
 
 noinst_LTLIBRARIES += libraux.la
 libraux_la_SOURCES = raux.c raux.h
