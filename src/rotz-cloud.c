@@ -44,6 +44,7 @@
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
+#include "raux.h"
 #include "nifty.h"
 
 static rotz_t ctx;
@@ -139,13 +140,15 @@ pivot(const char *what)
 	}
 	rotz_free_vtxlst(el);
 
+	/* sort and print */
+	sort_wtxlst(wl);
 	for (size_t i = 0; i < wl.z; i++) {
 		rtz_vtx_t it = wl.d[i];
 
 		if (UNLIKELY(it == wid)) {
 			continue;
 		}
-		prnt_wtx(it, wl.w[i]);
+		prnt_wtx(it, wl.w[i] + 1U);
 	}
 	rotz_free_wtxlst(wl);
 	return;
