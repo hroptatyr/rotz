@@ -107,7 +107,7 @@ prnt_wtxlst(rotz_t ctx, rtz_wtxlst_t wl)
 		const char *s = rotz_get_name(ctx, wl.d[j]);
 		fputs(rotz_massage_name(s), stdout);
 		fputc('\t', stdout);
-		fprintf(stdout, "%u\n", ++wl.w[j]);
+		fprintf(stdout, "%u\n", wl.w[j] + 1U);
 	}
 	return;
 }
