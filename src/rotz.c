@@ -1,4 +1,4 @@
-/*** rotz.h -- master rotz api
+/*** rotz.c -- master rotz api
  *
  * Copyright (C) 2013 Sebastian Freundt
  *
@@ -42,132 +42,54 @@
 #include <stdarg.h>
 #include <string.h>
 #include <fcntl.h>
-#if defined USE_LMDB
-# include <lmdb.h>
-#elif defined USE_TCBDB
-# include <tcbdb.h>
-#else
-# error need a database backend
-#endif	/* USE_*DB */
 
 #include "rotz.h"
 #include "nifty.h"
 
-struct rotz_s {
-#if defined USE_LMDB
-	MDB_env *db;
-	MDB_dbi dbi;
-#elif defined USE_TCBDB
-	TCBDB *db;
-#endif	/* USE_*DB */
-};
-
 #define const_buf_t	rtz_const_buf_t
 
 
-/* low level graph lib */
-rotz_t
-make_rotz(const char *db, ...)
-{
+/* our internal api */
+typedef const unsigned char *rtz_vtxkey_t;
+#define RTZ_VTXPRE	"vtx"
+#define RTZ_VTXKEY_Z	(sizeof(RTZ_VTXPRE) + sizeof(rtz_vtx_t))
+
+typedef const unsigned char *rtz_edgkey_t;
+#define RTZ_EDGPRE	"edg"
+#define RTZ_EDGKEY_Z	(sizeof(RTZ_EDGPRE) + sizeof(rtz_vtx_t))
+
+#define const_vtxlst_t	rtz_const_vtxlst_t
+
+static rtz_vtxkey_t rtz_vtxkey(rtz_vtx_t vid);
+static rtz_vtx_t rtz_vtx(rtz_vtxkey_t x);
+
+static rtz_vtx_t next_id(rotz_t cp);
+static rtz_vtx_t get_vertex(rotz_t cp, const char *v, size_t z);
+static int put_vertex(rotz_t cp, const char *a, size_t az, rtz_vtx_t v);
+static int rnm_vertex(rotz_t cp, rtz_vtxkey_t vkey, const char *v, size_t z);
+static int unput_vertex(rotz_t cp, const char *v, size_t z);
+static int unrnm_vertex(rotz_t cp, rtz_vtxkey_t vkey);
+
+static int add_alias(rotz_t cp, rtz_vtxkey_t vkey, const char *a, size_t az);
+static int add_akalst(rotz_t ctx, rtz_vtxkey_t ak, const_buf_t al);
+static const_buf_t get_aliases(rotz_t cp, rtz_vtxkey_t svtx);
+static rtz_buf_t get_aliases_r(rotz_t cp, rtz_vtxkey_t svtx);
+
+static rtz_edgkey_t rtz_edgkey(rtz_vtx_t vid);
+static rtz_vtx_t rtz_edg(rtz_edgkey_t x);
+
+static const_vtxlst_t get_edges(rotz_t ctx, rtz_edgkey_t src);
+static int add_edge(rotz_t ctx, rtz_edgkey_t src, rtz_vtx_t to);
+static int add_vtxlst(rotz_t ctx, rtz_edgkey_t src, const_vtxlst_t el);
+static int rem_edges(rotz_t ctx, rtz_edgkey_t src);
+
 #if defined USE_LMDB
-	va_list ap;
-	int omode = MDB_RDONLY | MDB_NOTLS | MDB_NOSUBDIR;
-	int dmode = 0;
-	int oparam;
-	struct rotz_s res;
-	MDB_txn *txn;
-
-	va_start(ap, db);
-	oparam = va_arg(ap, int);
-	va_end(ap);
-
-	if (oparam & O_RDWR) {
-		omode &= ~MDB_RDONLY;
-		omode |= MDB_WRITEMAP | MDB_MAPASYNC;
-	}
-	if (oparam & O_CREAT) {
-		dmode |= MDB_CREATE;
-	}
-
-	if (UNLIKELY(mdb_env_create(&res.db) != 0)) {
-		goto out0;
-	} else if (UNLIKELY(mdb_env_open(res.db, db, omode, 0644) != 0)) {
-		goto out1;
-	} else if (UNLIKELY(mdb_txn_begin(res.db, NULL, MDB_RDONLY, &txn) != 0)) {
-		goto out2;
-	} else if (UNLIKELY(mdb_dbi_open(txn, NULL, dmode, &res.dbi) != 0)) {
-		goto out3;
-	}
-	/* just finalise the transaction now */
-	mdb_txn_abort(txn);
-
-	/* clone the result */
-	{
-		struct rotz_s *resp = malloc(sizeof(*resp));
-		*resp = res;
-		return resp;
-	}
-
-out3:
-	mdb_txn_abort(txn);
-	mdb_close(res.db, res.dbi);
-out2:
-out1:
-	mdb_env_close(res.db);
-out0:
-	return NULL;
-
+# include "rotz-lmdb.c"
 #elif defined USE_TCBDB
-	va_list ap;
-	int omode = BDBOREADER;
-	int oparam;
-	struct rotz_s res;
-
-	va_start(ap, db);
-	oparam = va_arg(ap, int);
-	va_end(ap);
-
-	if (oparam & O_RDWR) {
-		omode |= BDBOWRITER;
-	}
-	if (oparam & O_CREAT) {
-		omode |= BDBOCREAT;
-	}
-
-	if (UNLIKELY((res.db = tcbdbnew()) == NULL)) {
-		goto out;
-	} else if (UNLIKELY(!tcbdbopen(res.db, db, omode))) {
-		goto out_free_db;
-	}
-
-	/* clone the result */
-	{
-		struct rotz_s *resp = malloc(sizeof(*resp));
-		*resp = res;
-		return resp;
-	}
-
-out_free_db:
-	tcbdbdel(res.db);
-out:
-	return NULL;
+# include "rotz-tcbdb.c"
+#else
+# error need a database backend
 #endif	/* USE_*DB */
-}
-
-void
-free_rotz(rotz_t ctx)
-{
-#if defined USE_LMDB
-	mdb_close(ctx->db, ctx->dbi);
-	mdb_env_sync(ctx->db, 1/*force synchronous*/);
-	mdb_env_close(ctx->db);
-#elif defined USE_TCBDB
-	tcbdbclose(ctx->db);
-	tcbdbdel(ctx->db);
-#endif	/* USE_*DB */
-	free(ctx);
-	return;
-}
 
 
 /* vertex accessors
@@ -182,10 +104,6 @@ free_rotz(rotz_t ctx)
  *
  * In the mapping NAME(s) there's usually just one name but aliases
  * of the name will be appended there. */
-typedef const unsigned char *rtz_vtxkey_t;
-#define RTZ_VTXPRE	"vtx"
-#define RTZ_VTXKEY_Z	(sizeof(RTZ_VTXPRE) + sizeof(rtz_vtx_t))
-
 static rtz_vtxkey_t
 rtz_vtxkey(rtz_vtx_t vid)
 {
@@ -250,397 +168,6 @@ rem_from_buf(const_buf_t b, const char *s, size_t z)
 	}
 	return (const_buf_t){.z = ap - akaspc, .d = akaspc};
 }
-
-static rtz_vtx_t
-next_id(rotz_t cp)
-{
-	static const char nid[] = "\x1d";
-
-#if defined USE_LMDB
-	MDB_val key = {
-		.mv_size = sizeof(nid),
-		.mv_data = nid,
-	};
-	MDB_txn *txn;
-	MDB_val val;
-	rtz_vtx_t res = 0U;
-
-	mdb_txn_begin(cp->db, NULL, 0, &txn);
-	switch (mdb_get(txn, cp->dbi, &key, &val)) {
-	default:
-		res = 0U;
-		break;
-	case 0:
-		res = *(const rtz_vtx_t*)val.mv_data;
-	case MDB_NOTFOUND:
-		res++;
-		val.mv_data = &res;
-		val.mv_size = sizeof(res);
-
-		/* put back into the db */
-		mdb_put(txn, cp->dbi, &key, &val, 0);
-		break;
-	}
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	int res;
-
-	if (UNLIKELY((res = tcbdbaddint(cp->db, nid, sizeof(nid), 1)) <= 0)) {
-		return 0U;
-	}
-#endif	/* USE_*DB */
-	return (rtz_vtx_t)res;
-}
-
-static rtz_vtx_t
-get_vertex(rotz_t cp, const char *v, size_t z)
-{
-	rtz_vtx_t res;
-
-#if defined USE_LMDB
-	MDB_val key = {
-		.mv_size = z,
-		.mv_data = v,
-	};
-	MDB_txn *txn;
-	MDB_val val;
-
-	/* get us a transaction */
-	mdb_txn_begin(cp->db, NULL, MDB_RDONLY, &txn);
-
-	if (UNLIKELY(mdb_get(txn, cp->dbi, &key, &val) != 0)) {
-		res = 0U;
-	} else if (UNLIKELY(val.mv_size != sizeof(res))) {
-		res = 0U;
-	} else {
-		res = *(const rtz_vtx_t*)val.mv_data;
-	}
-
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	const int *rp;
-	int rz[1];
-
-	if (UNLIKELY((rp = tcbdbget3(cp->db, v, z, rz)) == NULL)) {
-		return 0U;
-	} else if (UNLIKELY(*rz != sizeof(*rp))) {
-		return 0U;
-	}
-	res = (rtz_vtx_t)*rp;
-#endif	/* USE_*DB */
-
-	return res;
-}
-
-static int
-put_vertex(rotz_t cp, const char *a, size_t az, rtz_vtx_t v)
-{
-	int res = 0;
-
-#if defined USE_LMDB
-	MDB_txn *txn;
-	MDB_val key = {
-		.mv_size = az,
-		.mv_data = a,
-	};
-	MDB_val val = {
-		.mv_size = sizeof(v),
-		.mv_data = &v,
-	};
-
-	/* get us a transaction */
-	mdb_txn_begin(cp->db, NULL, 0, &txn);
-
-	if (UNLIKELY(mdb_put(txn, cp->dbi, &key, &val, 0) != 0)) {
-		res = -1;
-	}
-
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	res = tcbdbaddint(cp->db, a, az, (int)v) - 1;
-#endif	/* USE_*DB */
-
-	return res;
-}
-
-static int
-rnm_vertex(rotz_t cp, rtz_vtxkey_t vkey, const char *v, size_t z)
-{
-	int res = 0;
-
-#if defined USE_LMDB
-	MDB_val key = {
-		.mv_size = RTZ_VTXKEY_Z,
-		.mv_data = vkey,
-	};
-	MDB_val val = {
-		.mv_size = z + 1,
-		.mv_data= v,
-	};
-	MDB_txn *txn;
-
-	/* get us a transaction */
-	mdb_txn_begin(cp->db, NULL, 0, &txn);
-
-	if (UNLIKELY(mdb_put(txn, cp->dbi, &key, &val, 0) != 0)) {
-		key = (MDB_val){z, v};
-		mdb_del(txn, cp->dbi, &val, NULL);
-		res = -1;
-	}
-
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	if (UNLIKELY(!tcbdbput(cp->db, vkey, RTZ_VTXKEY_Z, v, z + 1))) {
-		tcbdbout(cp->db, v, z);
-		res = -1;
-	}
-#endif	/* USE_*DB */
-
-	return res;
-}
-
-static int
-unput_vertex(rotz_t cp, const char *v, size_t z)
-{
-	int res = 0;
-
-#if defined USE_LMDB
-	MDB_val key = {
-		.mv_size = z,
-		.mv_data = v,
-	};
-	MDB_txn *txn;
-
-	/* get us a transaction */
-	mdb_txn_begin(cp->db, NULL, 0, &txn);
-
-	if (UNLIKELY(mdb_del(txn, cp->dbi, &key, NULL) != 0)) {
-		res = -1;
-	}
-
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	res = tcbdbout(cp->db, v, z) - 1;
-#endif	/* USE_*DB */
-
-	return res;
-}
-
-static int
-unrnm_vertex(rotz_t cp, rtz_vtxkey_t vkey)
-{
-	int res = 0;
-
-#if defined USE_LMDB
-	MDB_val key = {
-		.mv_size = RTZ_VTXKEY_Z,
-		.mv_data = vkey,
-	};
-	MDB_txn *txn;
-
-	/* get us a transaction */
-	mdb_txn_begin(cp->db, NULL, 0, &txn);
-
-	if (UNLIKELY(mdb_del(txn, cp->dbi, &key, NULL) != 0)) {
-		res = -1;
-	}
-
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	res = tcbdbout(cp->db, vkey, RTZ_VTXKEY_Z) - 1;
-#endif	/* USE_*DB */
-
-	return res;
-}
-
-#if defined USE_LMDB
-static int
-mdb_putcat(MDB_txn *txn, MDB_dbi dbi, MDB_val *key, MDB_val *data)
-{
-	MDB_val getval = {0U};
-	MDB_val putval;
-
-	switch (mdb_get(txn, dbi, key, &getval)) {
-	default:
-		return -1;
-	case MDB_NOTFOUND:
-		/* put mode */
-		break;
-	case 0:
-		/* append mode */
-		break;
-	}
-
-	putval = (MDB_val){.mv_size = getval.mv_size + data->mv_size, NULL};
-
-	/* now put it back in the pool */
-	if (mdb_put(txn, dbi, key, &putval, MDB_RESERVE) != 0) {
-		return -1;
-	}
-
-	with (char *restrict pp = putval.mv_data) {
-		/* copy the original data first */
-		memcpy(pp, getval.mv_data, getval.mv_size);
-		/* append the new guy */
-		memcpy(pp + getval.mv_size, data->mv_data, data->mv_size);
-	}
-	return 0;
-}
-#endif	/* USE_LMDB */
-
-static int
-add_alias(rotz_t cp, rtz_vtxkey_t vkey, const char *a, size_t az)
-{
-	int res = 0;
-
-#if defined USE_LMDB
-	MDB_val key = {
-		.mv_size = RTZ_VTXKEY_Z,
-		.mv_data = vkey,
-	};
-	MDB_val val = {
-		.mv_size = az + 1,
-		.mv_data = a,
-	};
-	MDB_txn *txn;
-
-	/* get us a transaction */
-	mdb_txn_begin(cp->db, NULL, 0, &txn);
-
-	if (mdb_putcat(txn, cp->dbi, &key, &val) != 0) {
-		res = -1;
-	}
-
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	res = tcbdbputcat(cp->db, vkey, RTZ_VTXKEY_Z, a, az + 1) - 1;
-#endif	/* USE_*DB */
-
-	return res;
-}
-
-static int
-add_akalst(rotz_t ctx, rtz_vtxkey_t ak, const_buf_t al)
-{
-	int res = 0;
-
-#if defined USE_LMDB
-	MDB_val key = {
-		.mv_size = RTZ_VTXKEY_Z,
-		.mv_data = ak,
-	};
-	MDB_val val = {
-		.mv_size = al.z * sizeof(*al.d),
-		.mv_data = al.d,
-	};
-	MDB_txn *txn;
-
-	/* get us a transaction */
-	mdb_txn_begin(ctx->db, NULL, 0, &txn);
-
-	/* first delete the old guy */
-	if (mdb_del(txn, ctx->dbi, &key, NULL) != 0) {
-		/* ok, we're fucked */
-		res = -1;
-	} else if (UNLIKELY(val.mv_size == 0U)) {
-		/* leave it del'd */
-		;
-	} else if (mdb_put(txn, ctx->dbi, &key, &val, 0) != 0) {
-		/* putting the new list failed */
-		res = -1;
-	}
-
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	size_t z;
-
-	if (UNLIKELY((z = al.z * sizeof(*al.d)) == 0U)) {
-		return tcbdbout(ctx->db, ak, RTZ_VTXKEY_Z) - 1;
-	}
-	res = tcbdbput(ctx->db, ak, RTZ_VTXKEY_Z, al.d, z) - 1;
-#endif	/* USE_*DB */
-
-	return res;
-}
-
-static const_buf_t
-get_aliases(rotz_t cp, rtz_vtxkey_t svtx)
-{
-	const_buf_t res;
-
-#if defined USE_LMDB
-	MDB_val key = {
-		.mv_size = RTZ_VTXKEY_Z,
-		.mv_data = svtx,
-	};
-	MDB_val val;
-	MDB_txn *txn;
-
-	/* get us a transaction */
-	mdb_txn_begin(cp->db, NULL, MDB_RDONLY, &txn);
-
-	if (UNLIKELY(mdb_get(txn, cp->dbi, &key, &val) < 0)) {
-		res = (const_buf_t){0U};
-	} else {
-		res = (const_buf_t){.z = val.mv_size, .d = val.mv_data};
-	}
-
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	const void *sp;
-	int z[1];
-
-	if (UNLIKELY((sp = tcbdbget3(cp->db, svtx, RTZ_VTXKEY_Z, z)) == NULL)) {
-		return (const_buf_t){0U};
-	}
-
-	res = (const_buf_t){.z = (size_t)*z, .d = sp};
-#endif	/* USE_*DB */
-
-	return res;
-}
-
-static rtz_buf_t
-get_aliases_r(rotz_t cp, rtz_vtxkey_t svtx)
-{
-	rtz_buf_t res;
-
-#if defined USE_LMDB
-	const_buf_t tmp = get_aliases(cp, svtx);
-
-	res.d = malloc(res.z = tmp.z);
-	memcpy(res.d, tmp.d, tmp.z);
-#elif defined USE_TCBDB
-	void *sp;
-	int z[1];
-
-	if (UNLIKELY((sp = tcbdbget(cp->db, svtx, RTZ_VTXKEY_Z, z)) == NULL)) {
-		return (rtz_buf_t){0U};
-	}
-	res = (rtz_buf_t){.z = (size_t)*z, .d = sp};
-#endif	/* USE_*DB */
-
-	return res;
-}
-
 
 static rtz_buf_t
 get_name_r(rotz_t cp, rtz_vtxkey_t svtx)
@@ -833,12 +360,6 @@ rotz_get_aliases(rotz_t ctx, rtz_vtx_t v)
 
 
 /* edge accessors */
-typedef const unsigned char *rtz_edgkey_t;
-#define RTZ_EDGPRE	"edg"
-#define RTZ_EDGKEY_Z	(sizeof(RTZ_EDGPRE) + sizeof(rtz_vtx_t))
-
-#define const_vtxlst_t	rtz_const_vtxlst_t
-
 static rtz_edgkey_t
 rtz_edgkey(rtz_vtx_t vid)
 {
@@ -856,47 +377,6 @@ rtz_edg(rtz_edgkey_t edg)
 /* return the key for the incidence list */
 	const unsigned int *vi = (const void*)(edg + sizeof(RTZ_EDGPRE));
 	return *vi;
-}
-
-static const_vtxlst_t
-get_edges(rotz_t ctx, rtz_edgkey_t src)
-{
-	const_vtxlst_t res;
-
-#if defined USE_LMDB
-	MDB_val key = {
-		.mv_size = RTZ_EDGKEY_Z,
-		.mv_data = src,
-	};
-	MDB_val val;
-	MDB_txn *txn;
-
-	/* get us a transaction */
-	mdb_txn_begin(ctx->db, NULL, MDB_RDONLY, &txn);
-
-	if (UNLIKELY(mdb_get(txn, ctx->dbi, &key, &val) < 0)) {
-		res = (const_vtxlst_t){0U};
-	} else {
-		res = (const_vtxlst_t){
-			.z = val.mv_size / sizeof(rtz_vtx_t),
-			.d = val.mv_data
-		};
-	}
-
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	const void *sp;
-	int z[1];
-
-	if (UNLIKELY((sp = tcbdbget3(ctx->db, src, RTZ_EDGKEY_Z, z)) == NULL)) {
-		return (const_vtxlst_t){0U};
-	}
-	res = (const_vtxlst_t){.z = (size_t)*z / sizeof(rtz_vtx_t), .d = sp};
-#endif	/* USE_*DB */
-
-	return res;
 }
 
 static size_t
@@ -936,114 +416,6 @@ rem_from_vtxlst(const_vtxlst_t el, size_t idx)
 		ep += el.z;
 	}
 	return (const_vtxlst_t){.z = ep - edgspc, .d = edgspc};
-}
-
-static int
-add_edge(rotz_t ctx, rtz_edgkey_t src, rtz_vtx_t to)
-{
-	int res = 0;
-
-#if defined USE_LMDB
-	MDB_val key = {
-		.mv_size = RTZ_EDGKEY_Z,
-		.mv_data = src,
-	};
-	MDB_val val = {
-		.mv_size = sizeof(to),
-		.mv_data = &to,
-	};
-	MDB_txn *txn;
-
-	/* get us a transaction */
-	mdb_txn_begin(ctx->db, NULL, 0, &txn);
-
-	if (mdb_putcat(txn, ctx->dbi, &key, &val) != 0) {
-		res = -1;
-	}
-
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	res = tcbdbputcat(ctx->db, src, RTZ_EDGKEY_Z, &to, sizeof(to)) - 1;
-#endif	/* USE_*DB */
-
-	return res;
-}
-
-static int
-add_vtxlst(rotz_t ctx, rtz_edgkey_t src, const_vtxlst_t el)
-{
-	int res = 0;
-
-#if defined USE_LMDB
-	MDB_val key = {
-		.mv_size = RTZ_EDGKEY_Z,
-		.mv_data = src,
-	};
-	MDB_val val = {
-		.mv_size = el.z,
-		.mv_data = el.d,
-	};
-	MDB_txn *txn;
-
-	/* get us a transaction */
-	mdb_txn_begin(ctx->db, NULL, 0, &txn);
-
-	/* first delete the old guy */
-	if (mdb_del(txn, ctx->dbi, &key, NULL) != 0) {
-		/* ok, we're fucked */
-		res = -1;
-	} else if (UNLIKELY(val.mv_size == 0U)) {
-		/* leave it del'd */
-		;
-	} else if (mdb_put(txn, ctx->dbi, &key, &val, 0) != 0) {
-		/* putting the new list failed */
-		res = -1;
-	}
-
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	size_t z;
-
-	if (UNLIKELY((z = el.z * sizeof(*el.d)) == 0U)) {
-		return tcbdbout(ctx->db, src, RTZ_EDGKEY_Z) - 1;
-	}
-	res = tcbdbput(ctx->db, src, RTZ_EDGKEY_Z, el.d, z) - 1;
-#endif	/* USE_*DB */
-
-	return res;
-}
-
-static int
-rem_edges(rotz_t ctx, rtz_edgkey_t src)
-{
-	int res = 0;
-
-#if defined USE_LMDB
-	MDB_val key = {
-		.mv_size = RTZ_EDGKEY_Z,
-		.mv_data = src,
-	};
-	MDB_txn *txn;
-
-	/* get us a transaction */
-	mdb_txn_begin(ctx->db, NULL, 0, &txn);
-
-	if (UNLIKELY(mdb_del(txn, ctx->dbi, &key, NULL) != 0)) {
-		res = -1;
-	}
-
-	/* and commit */
-	mdb_txn_commit(txn);
-
-#elif defined USE_TCBDB
-	res = tcbdbout(ctx->db, src, RTZ_EDGKEY_Z) - 1;
-#endif	/* USE_*DB */
-
-	return res;
 }
 
 /* API */
@@ -1156,246 +528,6 @@ rotz_rem_edge(rotz_t ctx, rtz_vtx_t from, rtz_vtx_t to)
 	}
 	add_vtxlst(ctx, sfrom, el);
 	return 1;
-}
-
-
-/* iterators
- * we can't keep the promise here to separate keys and tokyocabinet guts */
-void
-rotz_vtx_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const char*, void*), void *clo)
-{
-#if defined USE_LMDB
-	MDB_txn *txn;
-	MDB_cursor *crs;
-	MDB_val key = {
-		.mv_size = sizeof(RTZ_VTXPRE),
-		.mv_data = RTZ_VTXPRE,
-	};
-	MDB_val val;
-
-	/* get us a transaction and a cursor */
-	mdb_txn_begin(ctx->db, NULL, MDB_RDONLY, &txn);
-	if (mdb_cursor_open(txn, ctx->dbi, &crs) != 0) {
-		goto out0;
-	} else if (mdb_cursor_get(crs, &key, NULL, MDB_SET_RANGE) != 0) {
-		goto out1;
-	} else if (mdb_cursor_get(crs, &key, &val, MDB_GET_CURRENT) != 0) {
-		goto out2;
-	}
-	do {
-		rtz_vtx_t vid;
-
-		if (UNLIKELY(key.mv_size != sizeof(RTZ_VTXPRE) + sizeof(vid)) ||
-		    UNLIKELY(!(vid = rtz_vtx(key.mv_data)))) {
-			break;
-		}
-		/* otherwise just call the callback */
-		if (UNLIKELY(cb(vid, val.mv_data, clo) < 0)) {
-			break;
-		}
-	} while (mdb_cursor_get(crs, &key, &val, MDB_NEXT) == 0);
-
-out2:
-out1:
-	/* cursor finalising */
-	mdb_cursor_close(crs);
-out0:
-	/* and out */
-	mdb_txn_abort(txn);
-
-#elif defined USE_TCBDB
-	BDBCUR *c = tcbdbcurnew(ctx->db);
-
-	tcbdbcurjump(c, RTZ_VTXPRE, sizeof(RTZ_VTXPRE));
-	do {
-		int z[1];
-		const void *kp;
-		rtz_vtx_t vid;
-		const void *vp;
-
-		if (UNLIKELY((kp = tcbdbcurkey3(c, z)) == NULL) ||
-		    UNLIKELY(*z != sizeof(RTZ_VTXPRE) + sizeof(vid)) ||
-		    UNLIKELY(!(vid = rtz_vtx(kp)))) {
-			break;
-		} else if (UNLIKELY((vp = tcbdbcurval3(c, z)) == NULL)) {
-			continue;
-		}
-		/* otherwise just call the callback */
-		if (UNLIKELY(cb(vid, vp, clo) < 0)) {
-			break;
-		}
-
-	} while (tcbdbcurnext(c));
-
-	tcbdbcurdel(c);
-#endif	/* USE_*DB */
-	return;
-}
-
-void
-rotz_edg_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const_vtxlst_t, void*), void *clo)
-{
-#if defined USE_LMDB
-	MDB_txn *txn;
-	MDB_cursor *crs;
-	MDB_val key = {
-		.mv_size = sizeof(RTZ_EDGPRE),
-		.mv_data = RTZ_EDGPRE,
-	};
-	MDB_val val;
-
-	/* get us a transaction and a cursor */
-	mdb_txn_begin(ctx->db, NULL, MDB_RDONLY, &txn);
-	if (mdb_cursor_open(txn, ctx->dbi, &crs) != 0) {
-		goto out0;
-	} else if (mdb_cursor_get(crs, &key, NULL, MDB_SET_RANGE) != 0) {
-		goto out1;
-	} else if (mdb_cursor_get(crs, &key, &val, MDB_GET_CURRENT) != 0) {
-		goto out2;
-	}
-	do {
-		rtz_vtx_t eid;
-		const_vtxlst_t cvl;
-
-		if (UNLIKELY(key.mv_size != sizeof(RTZ_EDGPRE) + sizeof(eid)) ||
-		    UNLIKELY(!(eid = rtz_edg(key.mv_data)))) {
-			break;
-		}
-		/* ctor the vl */
-		cvl = (const_vtxlst_t){
-			.z = val.mv_size / sizeof(*cvl.d),
-			.d = val.mv_data,
-		};
-		/* otherwise just call the callback */
-		if (UNLIKELY(cb(eid, cvl, clo) < 0)) {
-			break;
-		}
-	} while (mdb_cursor_get(crs, &key, &val, MDB_NEXT) == 0);
-
-out2:
-out1:
-	/* cursor finalising */
-	mdb_cursor_close(crs);
-out0:
-	/* and out */
-	mdb_txn_abort(txn);
-
-#elif defined USE_TCBDB
-	rtz_vtxlst_t vl = {.z = 0U};
-	BDBCUR *c = tcbdbcurnew(ctx->db);
-
-	tcbdbcurjump(c, RTZ_EDGPRE, sizeof(RTZ_EDGPRE));
-	do {
-		int z[1];
-		const void *kp;
-		rtz_vtx_t vid;
-		const void *vp;
-		const_vtxlst_t cvl;
-
-		if (UNLIKELY((kp = tcbdbcurkey3(c, z)) == NULL) ||
-		    UNLIKELY(*z != sizeof(RTZ_EDGPRE) + sizeof(vid)) ||
-		    UNLIKELY(!(vid = rtz_edg(kp)))) {
-			break;
-		} else if (UNLIKELY((vp = tcbdbcurval3(c, z)) == NULL)) {
-			continue;
-		}
-		/* copy the vl */
-		cvl.z = *z / sizeof(*vl.d);
-		if (UNLIKELY(cvl.z > vl.z)) {
-			vl.z = ((cvl.z - 1) / 64U + 1) * 64U;
-			vl.d = realloc(vl.d, vl.z * sizeof(*vl.d));
-		}
-		memcpy(vl.d, vp, cvl.z * sizeof(*cvl.d));
-		cvl.d = vl.d;
-		/* otherwise just call the callback */
-		if (UNLIKELY(cb(vid, cvl, clo) < 0)) {
-			break;
-		}
-
-	} while (tcbdbcurnext(c));
-
-	tcbdbcurdel(c);
-	rotz_free_vtxlst(vl);
-#endif	/* USE_*DB */
-	return;
-}
-
-void
-rotz_iter(
-	rotz_t ctx, rtz_const_buf_t prfx_match,
-	int(*cb)(rtz_const_buf_t key, rtz_const_buf_t val, void*), void *clo)
-{
-#if defined USE_LMDB
-	MDB_txn *txn;
-	MDB_cursor *crs;
-	MDB_val key = {
-		.mv_size = prfx_match.z,
-		.mv_data = prfx_match.d,
-	};
-	MDB_val val;
-
-	/* get us a transaction and a cursor */
-	mdb_txn_begin(ctx->db, NULL, MDB_RDONLY, &txn);
-	if (mdb_cursor_open(txn, ctx->dbi, &crs) != 0) {
-		goto out0;
-	} else if (mdb_cursor_get(crs, &key, NULL, MDB_SET_RANGE) != 0) {
-		goto out1;
-	} else if (mdb_cursor_get(crs, &key, &val, MDB_GET_CURRENT) != 0) {
-		goto out2;
-	}
-
-#define B	(const_buf_t)
-	do {
-		const_buf_t kb;
-		const_buf_t vb;
-
-		if (UNLIKELY(memcmp(key.mv_data, prfx_match.d, prfx_match.z))) {
-			break;
-		}
-		/* otherwise pack the bufs and call the callback */
-		kb = B{key.mv_size, key.mv_data};
-		vb = B{val.mv_size, val.mv_data};
-		if (UNLIKELY(cb(kb, vb, clo) < 0)) {
-			break;
-		}
-	} while (mdb_cursor_get(crs, &key, &val, MDB_NEXT) == 0);
-#undef B
-
-out2:
-out1:
-	/* cursor finalising */
-	mdb_cursor_close(crs);
-out0:
-	/* and out */
-	mdb_txn_abort(txn);
-
-#elif defined USE_TCBDB
-	BDBCUR *c = tcbdbcurnew(ctx->db);
-
-#define B	(const_buf_t)
-	tcbdbcurjump(c, prfx_match.d, prfx_match.z);
-	do {
-		int z[2];
-		const void *kp;
-		const void *vp;
-
-		if (UNLIKELY((kp = tcbdbcurkey3(c, z + 0)) == NULL) ||
-		    UNLIKELY(memcmp(kp, prfx_match.d, prfx_match.z))) {
-			break;
-		} else if (UNLIKELY((vp = tcbdbcurval3(c, z + 1)) == NULL)) {
-			continue;
-		}
-		/* otherwise just call the callback */
-		if (UNLIKELY(cb(B{z[0], kp}, B{z[1], vp}, clo) < 0)) {
-			break;
-		}
-
-	} while (tcbdbcurnext(c));
-#undef B
-
-	tcbdbcurdel(c);
-#endif	/* USE_*DB */
-	return;
 }
 
 

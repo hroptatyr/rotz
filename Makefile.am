@@ -8,11 +8,12 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS =
 SUBDIRS += src
 SUBDIRS += info
+SUBDIRS += test
 
 EXTRA_DIST =
 DISTCLEANFILES =
 
-EXTRA_DIST += git-version-gen
+EXTRA_DIST += build-aux/git-version-gen
 
 DISTCLEANFILES += version.mk
 

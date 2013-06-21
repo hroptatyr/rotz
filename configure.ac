@@ -5,7 +5,7 @@ dnl -------------------------------------------------------------------------
 AC_PREREQ([2.63])
 ## t.i.n.a.v = this is not a version, never use it!
 AC_INIT([rotz], [t.i.n.a.v], [https://github.com/hroptatyr/rotz])
-AC_CONFIG_AUX_DIR([.])
+AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -44,14 +44,19 @@ AS_HELP_STRING([--with-database], [
 db backend to use, one of tokyo(cabinet), lmdb])],
 	[with_database="${withval}"], [with_database="tokyo"])
 
+AM_CONDITIONAL([USE_TCBDB], [test "${with_database}" = "tcbdb"])
+AM_CONDITIONAL([USE_LMDB], [test "${with_database}" = "lmdb"])
+
 case "${with_database}" in
 ("tokyo"*)
 	PKG_CHECK_MODULES([tokyocabinet], [tokyocabinet])
 	AC_DEFINE([USE_TCBDB], [1], [define when tokyocabinet shall be db backend])
+	with_database="tcbdb"
 	;;
-("lmbd")
+("lmdb")
 	PKG_CHECK_MODULES([lmdb], [lmdb])
 	AC_DEFINE([USE_LMDB], [1], [define when lmdb shall be db backend])
+	with_database="lmdb"
 	;;
 (*)
 	AC_MSG_ERROR([no such database backend \`${with_database}'])
@@ -66,6 +71,7 @@ SXE_CHECK_LIBTOOL
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([info/Makefile])
+AC_CONFIG_FILES([test/Makefile])
 AC_OUTPUT
 
 echo

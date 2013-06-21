@@ -27,6 +27,9 @@ librotz_la_CPPFLAGS += $(lmdb_CFLAGS)
 librotz_la_LDFLAGS = $(AM_LDFLAGS)
 librotz_la_LDFLAGS += $(tokyocabinet_LIBS)
 librotz_la_LDFLAGS += $(lmdb_LIBS)
+EXTRA_librotz_la_SOURCES =
+EXTRA_librotz_la_SOURCES += rotz-tcbdb.c
+EXTRA_librotz_la_SOURCES += rotz-lmdb.c
 
 noinst_LTLIBRARIES += libraux.la
 libraux_la_SOURCES = raux.c raux.h
@@ -108,9 +111,7 @@ rotz_search_SOURCES = rotz-search.c
 rotz_search_SOURCES += rotz-cmd-api.h
 rotz_search_SOURCES += rotz-search-clo.h rotz-search-clo.ggo
 rotz_search_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
-rotz_search_CPPFLAGS += $(tokyocabinet_CFLAGS)
 rotz_search_LDFLAGS = $(AM_LDFLAGS)
-rotz_search_LDFLAGS += $(tokyocabinet_LIBS)
 rotz_search_LDADD = librotz.la
 rotz_search_LDADD += libraux.la
 BUILT_SOURCES += rotz-search-clo.c rotz-search-clo.h
@@ -136,6 +137,15 @@ rotz_fsck_LDFLAGS += $(tokyocabinet_LIBS)
 rotz_fsck_LDADD = librotz.la
 rotz_fsck_LDADD += libraux.la
 BUILT_SOURCES += rotz-fsck-clo.c rotz-fsck-clo.h
+
+if USE_LMDB
+noinst_PROGRAMS += rotz-dump
+rotz_dump_SOURCES = rotz-dump.c
+rotz_dump_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
+rotz_dump_CPPFLAGS += $(lmdb_CFLAGS)
+rotz_dump_LDFLAGS = $(AM_LDFLAGS)
+rotz_dump_LDFLAGS += $(lmdb_LIBS)
+endif  USE_LMDB
 
 
 version.c: version.c.in $(top_builddir)/version.mk
