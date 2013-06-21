@@ -39,8 +39,7 @@ EXTRA_DIST += rtz-test.sh
 ## ggo rule
 %.c %.h: %.ggo
 	$(AM_V_GEN) gengetopt -F $* -i $<
-	@sed -e 's,config.h,version.h,g' \
-	     -e 's,_PARSER_VERSION VERSION,_PARSER_VERSION "$(VERSION)",g' \
+	@sed -e 's,_PARSER_VERSION VERSION,_PARSER_VERSION "$(VERSION)",g' \
 	     $*.h > $*.h-t \
 	&& mv $*.h-t $*.h
 
