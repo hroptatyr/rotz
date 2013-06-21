@@ -49,7 +49,7 @@ case "${with_database}" in
 	PKG_CHECK_MODULES([tokyocabinet], [tokyocabinet])
 	AC_DEFINE([USE_TCBDB], [1], [define when tokyocabinet shall be db backend])
 	;;
-("lmbd")
+("lmdb")
 	PKG_CHECK_MODULES([lmdb], [lmdb])
 	AC_DEFINE([USE_LMDB], [1], [define when lmdb shall be db backend])
 	;;
