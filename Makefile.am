@@ -13,7 +13,7 @@ SUBDIRS += test
 EXTRA_DIST =
 DISTCLEANFILES =
 
-EXTRA_DIST += git-version-gen
+EXTRA_DIST += build-aux/git-version-gen
 
 DISTCLEANFILES += version.mk
 
