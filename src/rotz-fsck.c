@@ -72,6 +72,10 @@ opti(rotz_t UNUSED(ctx))
 	return 0;
 }
 #elif defined USE_TCBDB
+struct rotz_s {
+	TCBDB *db;
+};
+
 static void
 dberror(rotz_t ctx, const char *premsg)
 {
