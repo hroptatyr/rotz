@@ -91,6 +91,8 @@ make_rotz(const char *db, ...)
 
 	if (UNLIKELY(mdb_env_create(&res.db) != 0)) {
 		goto out0;
+	} else if (UNLIKELY(mdb_env_set_mapsize(res.db, 512 * 1048576) != 0)) {
+		goto out0;
 	} else if (UNLIKELY(mdb_env_open(res.db, db, omode, 0644) != 0)) {
 		goto out1;
 	} else if (UNLIKELY(mdb_txn_begin(res.db, NULL, MDB_RDONLY, &txn) != 0)) {
