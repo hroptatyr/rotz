@@ -44,14 +44,19 @@ AS_HELP_STRING([--with-database], [
 db backend to use, one of tokyo(cabinet), lmdb])],
 	[with_database="${withval}"], [with_database="tokyo"])
 
+AM_CONDITIONAL([USE_TCBDB], [test "${with_database}" = "tcbdb"])
+AM_CONDITIONAL([USE_LMDB], [test "${with_database}" = "lmdb"])
+
 case "${with_database}" in
 ("tokyo"*)
 	PKG_CHECK_MODULES([tokyocabinet], [tokyocabinet])
 	AC_DEFINE([USE_TCBDB], [1], [define when tokyocabinet shall be db backend])
+	with_database="tcbdb"
 	;;
 ("lmdb")
 	PKG_CHECK_MODULES([lmdb], [lmdb])
 	AC_DEFINE([USE_LMDB], [1], [define when lmdb shall be db backend])
+	with_database="lmdb"
 	;;
 (*)
 	AC_MSG_ERROR([no such database backend \`${with_database}'])
