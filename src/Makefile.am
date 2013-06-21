@@ -135,6 +135,13 @@ rotz_fsck_LDADD = librotz.la
 rotz_fsck_LDADD += libraux.la
 BUILT_SOURCES += rotz-fsck-clo.c rotz-fsck-clo.h
 
+noinst_PROGRAMS += rotz-dump
+rotz_dump_SOURCES = rotz-dump.c
+rotz_dump_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
+rotz_dump_CPPFLAGS += $(lmdb_CFLAGS)
+rotz_dump_LDFLAGS = $(AM_LDFLAGS)
+rotz_dump_LDFLAGS += $(lmdb_LIBS)
+
 
 version.c: version.c.in $(top_builddir)/version.mk
 	sed -e 's,[@]VERSION[@],$(VERSION),g' <$(srcdir)/$@.in >$@
