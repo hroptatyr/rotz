@@ -110,7 +110,7 @@ make_rotz(const char *db, ...)
 
 out3:
 	mdb_txn_abort(txn);
-	mdb_close(res.db, res.dbi);
+	mdb_dbi_close(res.db, res.dbi);
 out2:
 out1:
 	mdb_env_close(res.db);
