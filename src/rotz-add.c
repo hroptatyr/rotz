@@ -76,6 +76,19 @@ add_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 	return;
 }
 
+static void
+add_tagsym(rotz_t ctx, const char *tag, const char *sym)
+{
+	rtz_vtx_t tid;
+
+	tag = rotz_tag(tag);
+	if (UNLIKELY((tid = rotz_add_vertex(ctx, tag)) == 0U)) {
+		return;
+	}
+	add_tag(ctx, tid, sym);
+	return;
+}
+
 
 #if defined STANDALONE
 #if defined __INTEL_COMPILER
@@ -100,11 +113,6 @@ main(int argc, char *argv[])
 	if (rotz_parser(argc, argv, argi)) {
 		res = 1;
 		goto out;
-	} else if (argi->inputs_num < 1) {
-		fputs("Error: no TAG argument specified\n\n", stderr);
-		rotz_parser_print_help();
-		res = 1;
-		goto out;
 	}
 
 	if (argi->database_given) {
@@ -119,6 +127,28 @@ main(int argc, char *argv[])
 		res = 1;
 		goto out;
 	}
+	if (argi->inputs_num == 0 && !isatty(STDIN_FILENO)) {
+		/* tag \t sym mode, both from stdin */
+		char *line = NULL;
+		size_t llen = 0U;
+		ssize_t nrd;
+
+		while ((nrd = getline(&line, &llen, stdin)) > 0) {
+			const char *sym;
+
+			line[nrd - 1] = '\0';
+			tag = line;
+			if (UNLIKELY((sym = strchr(line, '\t')) == NULL)) {
+				continue;
+			}
+			/* \t -> \0 */
+			line[sym++ - line] = '\0';
+			add_tagsym(ctx, tag, sym);
+		}
+		free(line);
+		goto fini;
+	}
+	/* ... otherwise associate with TAG somehow */
 	tag = rotz_tag(argi->inputs[0]);
 	if (UNLIKELY((tid = rotz_add_vertex(ctx, tag)) == 0U)) {
 		goto fini;
