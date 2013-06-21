@@ -5,7 +5,7 @@ dnl -------------------------------------------------------------------------
 AC_PREREQ([2.63])
 ## t.i.n.a.v = this is not a version, never use it!
 AC_INIT([rotz], [t.i.n.a.v], [https://github.com/hroptatyr/rotz])
-AC_CONFIG_AUX_DIR([.])
+AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
