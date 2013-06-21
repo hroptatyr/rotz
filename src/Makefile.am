@@ -27,6 +27,9 @@ librotz_la_CPPFLAGS += $(lmdb_CFLAGS)
 librotz_la_LDFLAGS = $(AM_LDFLAGS)
 librotz_la_LDFLAGS += $(tokyocabinet_LIBS)
 librotz_la_LDFLAGS += $(lmdb_LIBS)
+EXTRA_librotz_la_SOURCES =
+EXTRA_librotz_la_SOURCES += rotz-tcbdb.c
+EXTRA_librotz_la_SOURCES += rotz-lmdb.c
 
 noinst_LTLIBRARIES += libraux.la
 libraux_la_SOURCES = raux.c raux.h
