@@ -1,9 +1,12 @@
 args "--unamed-opts --no-handle-error --long-help -a rotz_args_info -f rotz_parser"
 package "rotz-add"
-usage "rotz-add [OPTIONS...] TAG [RSYM]..."
-description "Add TAG to rolf symbol(s) RSYM.
+usage "rotz-add [OPTIONS...] [TAG [SYM]]..."
+description "Add TAG to rolf symbol(s) SYM.
 
-If RSYM is omitted on the command line, read symbols from stdin."
+If SYM is omitted on the command line, read symbols from stdin.
+
+If both TAG and SYM are omitted, read tag sym pairs (separated by a
+tab character) from stdin."
 
 option "verbose" v
 	"Be verbose about the deletions made."
