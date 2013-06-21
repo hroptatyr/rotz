@@ -1,4 +1,4 @@
-/*** rotz.h -- master rotz api
+/*** rotz.c -- master rotz api
  *
  * Copyright (C) 2013 Sebastian Freundt
  *
