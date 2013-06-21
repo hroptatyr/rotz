@@ -1185,7 +1185,7 @@ rotz_vtx_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const char*, void*), void *clo)
 	do {
 		rtz_vtx_t vid;
 
-		if (UNLIKELY(key.mv_size != sizeof(RTZ_VTXPRE) + sizeof(vid)) ||
+		if (UNLIKELY(key.mv_size != RTZ_VTXKEY_Z) ||
 		    UNLIKELY(!(vid = rtz_vtx(key.mv_data)))) {
 			break;
 		}
@@ -1257,7 +1257,7 @@ rotz_edg_iter(rotz_t ctx, int(*cb)(rtz_vtx_t, const_vtxlst_t, void*), void *clo)
 		rtz_vtx_t eid;
 		const_vtxlst_t cvl;
 
-		if (UNLIKELY(key.mv_size != sizeof(RTZ_EDGPRE) + sizeof(eid)) ||
+		if (UNLIKELY(key.mv_size != RTZ_EDGKEY_Z) ||
 		    UNLIKELY(!(eid = rtz_edg(key.mv_data)))) {
 			break;
 		}
