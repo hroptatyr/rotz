@@ -616,9 +616,11 @@ vtxlst_intersection(rtz_vtxlst_t tgt, const_vtxlst_t el)
 	     ip < ep; ip++) {
 		if (*ip) {
 			if (LIKELY(jp < ip)) {
-				*jp = *ip;
+				*jp++ = *ip;
 			}
-			tgt.z = ++jp - tgt.d;
+		} else {
+			/* remove the item by decr'ing the tgt item counter */
+			tgt.z--;
 		}
 	}
 	return tgt;
