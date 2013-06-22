@@ -28,6 +28,9 @@ TST_LOG_COMPILER = $(builddir)/rtz-test
 AM_TST_LOG_FLAGS = --builddir $(top_builddir)/src
 EXTRA_DIST += $(srcdir)/rtz-test.sh
 
+rtz_test_CPPFLAGS = $(AM_CPPFLAGS)
+rtz_test_CPPFLAGS += -D_GNU_SOURCE
+
 ## the actual tests here
 TESTS += add_01.tst
 TESTS += add_02.tst

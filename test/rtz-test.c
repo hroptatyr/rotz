@@ -5,7 +5,75 @@
 #endif	/* HAVE_CONFIG_H */
 #include <unistd.h>
 #include <stdio.h>
+#include <stdarg.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <errno.h>
 
+
+static void
+__attribute__((format(printf, 2, 3)))
+error(int eno, const char *fmt, ...)
+{
+	va_list vap;
+	va_start(vap, fmt);
+	vfprintf(stderr, fmt, vap);
+	va_end(vap);
+	if (eno || errno) {
+		fputc(':', stderr);
+		fputc(' ', stderr);
+		fputs(strerror(eno ?: errno), stderr);
+	}
+	fputc('\n', stderr);
+	return;
+}
+
+static void*
+mmap_fd(int fd, size_t fz)
+{
+	void *p;
+
+	if ((p = mmap(NULL, fz, PROT_READ, MAP_PRIVATE, 0, fd)) == MAP_FAILED) {
+		return NULL;
+	}
+	return p;
+}
+
+static int
+munmap_fd(void *fp, size_t fz)
+{
+	return munmap(fp, fz);
+}
+
+
+static int
+test(const char *testfile)
+{
+	int fd;
+	int rc = 99;
+	struct stat st;
+	void *tfmp;
+
+	if ((fd = open(testfile, O_RDONLY)) < 0) {
+		error(0, "Error: cannot open file `%s'", testfile);
+		goto out;
+	} else if (fstat(fd, &st) < 0) {
+		error(0, "Error: cannot stat file `%s'", testfile);
+		goto out;
+	} else if ((tfmp = mmap_fd(fd, st.st_size)) == NULL) {
+		error(0, "Error: cannot map file `%s'", testfile);
+		goto out;
+	}
+
+
+	munmap_fd(tfmp, st.st_size);
+out:
+	return rc;
+}
+
+
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 # pragma warning (disable:181)
@@ -21,8 +89,7 @@ int
 main(int argc, char *argv[])
 {
 	struct gengetopt_args_info argi[1];
-	const char *srcdir;
-	char *shpart;
+	int rc = 99;
 
 	if (cmdline_parser(argc, argv, argi)) {
 		goto out;
@@ -36,9 +103,6 @@ main(int argc, char *argv[])
 	}
 	if (argi->srcdir_given) {
 		setenv("srcdir", argi->srcdir_arg, 1);
-		srcdir = argi->srcdir_arg;
-	} else {
-		srcdir = getenv("srcdir");
 	}
 	if (argi->hash_given) {
 		setenv("hash", argi->hash_arg, 1);
@@ -54,56 +118,12 @@ main(int argc, char *argv[])
 	setenv("endian", "little", 1);
 #endif	/* WORDS_BIGENDIAN */
 
-	/* bang the actual testfile */
-	setenv("testfile", argi->inputs[0], 1);
-
-	/* promote srcdir */
-	if (srcdir) {
-		static char buf[4096];
-		ssize_t res;
-
-		if ((res = readlink(srcdir, buf, sizeof(buf))) >= 0) {
-			buf[res] = '\0';
-			srcdir = buf;
-		}
-	}
-
-	/* build the command */
-	if ((shpart = argi->shell_bits_arg) == NULL ||
-	    (shpart[0] != '/' && shpart[0] != '.')) {
-		static const char fn[] = "rtz-test.sh";
-		static char buf[4096];
-		size_t idx = 0UL;
-
-		if (srcdir && (idx = strlen(srcdir))) {
-			memcpy(buf, srcdir, idx);
-			if (buf[idx - 1] != '/') {
-				buf[idx++] = '/';
-			}
-		}
-		if (!argi->shell_bits_given) {
-			memcpy(buf + idx, fn, sizeof(fn));
-		} else {
-			size_t z;
-			memcpy(buf + idx, shpart, z = strlen(shpart));
-			buf[idx + z] = '\0';
-		}
-		shpart = buf;
-	}
-
-	/* exec the test script */
-	{
-		char *const new_argv[] = {"rtz-test", shpart, NULL};
-
-		if (execv("/bin/sh", new_argv)) {
-			perror("shell part not found");
-		}
-	}
+	rc = test(argi->inputs[0]);
 
 out:
 	cmdline_parser_free(argi);
 	/* never succeed */
-	return 1;
+	return rc;
 }
 
 /* rtz-test.c ends here */
