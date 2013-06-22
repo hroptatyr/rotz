@@ -29,6 +29,12 @@ AM_TST_LOG_FLAGS = --builddir $(top_builddir)/src
 EXTRA_DIST += $(srcdir)/rtz-test.sh
 
 ## the actual tests here
+TESTS += add_01.tst
+TESTS += add_02.tst
+TESTS += add_03.tst
+TESTS += del_01.tst
+TESTS += del_02.tst
+TESTS += del_03.tst
 
 
 ## our friendly helpers
