@@ -23,8 +23,8 @@ check_PROGRAMS =
 CLEANFILES = $(check_PROGRAMS)
 
 TEST_EXTENSIONS += .tst
-check_PROGRAMS += rtz-test
-TST_LOG_COMPILER = $(builddir)/rtz-test
+check_PROGRAMS += clitoris
+TST_LOG_COMPILER = $(builddir)/clitoris
 AM_TST_LOG_FLAGS = --builddir $(top_builddir)/src
 EXTRA_DIST += $(srcdir)/rtz-test.sh
 
@@ -41,13 +41,13 @@ TESTS += del_03.tst
 
 
 ## our friendly helpers
-check_PROGRAMS += rtz-test
-BUILT_SOURCES += rtz-test-clo.c rtz-test-clo.h
-EXTRA_DIST += rtz-test.sh
+check_PROGRAMS += clitoris
+BUILT_SOURCES += clitoris.x clitoris.h
+
 
 ## ggo rule
-%.c %.h: %.ggo
-	$(AM_V_GEN) gengetopt -F $* -i $<
+%.x %.h: %.ggo
+	$(AM_V_GEN) gengetopt -F $* -c x -i $<
 	@sed -e 's,_PARSER_VERSION VERSION,_PARSER_VERSION "$(VERSION)",g' \
 	     $*.h > $*.h-t \
 	&& mv $*.h-t $*.h
