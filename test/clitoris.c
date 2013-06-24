@@ -234,23 +234,35 @@ static int
 init_chld(struct clit_chld_s ctx[static 1])
 {
 /* set up a connection with /bin/sh to pipe to and read from */
-	int pty_mast;
+	int pty;
+	int pin[2];
 	int pou[2];
 
 	if (0) {
 		;
+	} else if (UNLIKELY(pipe(pin) < 0)) {
+		ctx->chld = -1;
+		return -1;
 	} else if (UNLIKELY(pipe(pou) < 0)) {
 		ctx->chld = -1;
 		return -1;
 	}
 
-	switch ((ctx->chld = forkpty(&pty_mast, NULL, NULL, NULL))) {
+	/* allow both vfork() and forkpty() if requested */
+	switch ((ctx->chld = 1 ? vfork() : forkpty(&pty, NULL, NULL, NULL))) {
 	case -1:
 		/* i am an error */
 		return -1;
 
 	case 0:;
-		/* i am the child */
+		/* i am the child, read from pin and write to pou */
+		if (1) {
+			close(STDIN_FILENO);
+			close(STDOUT_FILENO);
+			/* pin[0] ->stdin */
+			dup2(pin[0], STDIN_FILENO);
+			close(pin[1]);
+		}
 		/* stdout -> pou[1] */
 		dup2(pou[1], STDOUT_FILENO);
 		close(pou[0]);
@@ -258,10 +270,17 @@ init_chld(struct clit_chld_s ctx[static 1])
 
 	default:
 		/* i am the parent, clean up descriptors */
+		if (1) {
+			close(pin[0]);
+		}
 		close(pou[1]);
 
 		/* assign desc, write end of pin */
-		ctx->pin = pty_mast;
+		if (1) {
+			ctx->pin = pin[1];
+		} else {
+			ctx->pin = pty;
+		}
 		/* ... and read end of pou */
 		ctx->pou = pou[0];
 
