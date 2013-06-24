@@ -252,13 +252,13 @@ init_chld(struct clit_chld_s ctx[static 1])
 	case 0:;
 		/* i am the child */
 		/* read from pin and write to pou */
-		close(0);
-		close(1);
+		close(STDIN_FILENO);
+		close(STDOUT_FILENO);
 		/* pin[0] -> stdin */
-		dup2(pin[0], 0);
+		dup2(pin[0], STDIN_FILENO);
 		close(pin[1]);
 		/* stdout -> pou[1] */
-		dup2(pou[1], 1);
+		dup2(pou[1], STDOUT_FILENO);
 		close(pou[0]);
 		execl("/bin/sh", "sh", NULL);
 
