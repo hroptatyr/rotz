@@ -46,11 +46,38 @@
 #include <string.h>
 #include <errno.h>
 
+#if !defined LIKELY
+# define LIKELY(_x)	__builtin_expect((_x), 1)
+#endif	/* !LIKELY */
+#if !defined UNLIKELY
+# define UNLIKELY(_x)	__builtin_expect((_x), 0)
+#endif	/* UNLIKELY */
+
+#if !defined with
+# define with(args...)	for (args, *__ep__ = (void*)1; __ep__; __ep__ = 0)
+#endif	/* !with */
+
+
 typedef struct clitf_s clitf_t;
+typedef struct clit_bit_s clit_bit_t;
+typedef struct clit_tst_s *clit_tst_t;
 
 struct clitf_s {
 	size_t z;
 	void *d;
+};
+
+struct clit_bit_s {
+	size_t z;
+	const char *d;
+};
+
+/* a test is the command (inlcuding stdin), stdout result, and stderr result */
+struct clit_tst_s {
+	clit_bit_t cmd;
+	clit_bit_t out;
+	clit_bit_t err;
+	clit_bit_t rest;
 };
 
 
@@ -77,7 +104,7 @@ mmap_fd(int fd, size_t fz)
 {
 	void *p;
 
-	if ((p = mmap(NULL, fz, PROT_READ, MAP_PRIVATE, 0, fd)) == MAP_FAILED) {
+	if ((p = mmap(NULL, fz, PROT_READ, MAP_PRIVATE, fd, 0)) == MAP_FAILED) {
 		return (clitf_t){.z = 0U, .d = NULL};
 	}
 	return (clitf_t){.z = fz, .d = p};
@@ -90,34 +117,143 @@ munmap_fd(clitf_t map)
 }
 
 
+static const char *
+find_shtok(const char *bp, size_t bz)
+{
+/* finds a (lone) occurrence of $ at the beginning of a line */
+	for (const char *res;
+	     (res = memchr(bp, '$', bz)) != NULL;
+	     bz -= (res + 1 - bp), bp = res + 1) {
+		/* we're actually after a "\n$" */
+		if (res == bp || res[-1] == '\n') {
+			return res;
+		}
+	}
+	return NULL;
+}
+
+static clit_bit_t
+find_cmd(const char *bp, size_t bz)
+{
+	clit_bit_t resbit = {0U};
+	clit_bit_t tok;
+
+	/* find the bit where it says '$ ' */
+	with (const char *res) {
+		if (UNLIKELY((res = find_shtok(bp, bz)) == NULL)) {
+			return (clit_bit_t){0U};
+		} else if (UNLIKELY(res[1] != ' ')) {
+			return (clit_bit_t){0U};
+		}
+		/* otherwise */
+		resbit.d = res += 2U;
+		bz -= res - bp;
+		bp = res;
+	}
+
+	/* find the new line bit */
+	for (const char *res;
+	     (res = memchr(bp, '\n', bz)) != NULL; bp = res + 1U) {
+		bz -= (res + 1U - bp);
+		/* check for trailing \ or <<EOF */
+		if (UNLIKELY((tok.d = memmem(bp, bz, "<<", 2)) != NULL)) {
+			tok.d += 2U;
+			tok.z = res - tok.d;
+			/* analyse this eof token */
+			bp = res + 1U;
+			goto eof;
+		} else if (res == bp || res[-1] != '\\') {
+			resbit.z = res - resbit.d;
+			break;
+		}
+	}
+	return resbit;
+
+eof:
+	/* massage tok so that it starts on a non-space and ends on one */
+	for (; *tok.d == ' ' || *tok.d == '\t'; tok.d++, tok.z--);
+	for (;
+	     tok.z && (tok.d[tok.z - 1] == ' ' || tok.d[tok.z - 1] == '\t');
+	     tok.z--);
+	if ((*tok.d == '\'' || *tok.d == '"') && tok.d[tok.z - 1] == *tok.d) {
+		tok.d++;
+		tok.z -= 2U;
+	}
+	/* now find the opposite EOF token */
+	for (const char *eotok;
+	     (eotok = memmem(bp, bz, tok.d, tok.z)) != NULL;
+	     bz -= eotok + 1U - bp, bp = eotok + 1U) {
+		if (LIKELY(eotok[-1] == '\n' && eotok[tok.z] == '\n')) {
+			resbit.z = eotok + tok.z - resbit.d;
+			break;
+		}
+	}
+	return resbit;
+}
+
+static int
+find_tst(struct clit_tst_s tst[static 1], const char *bp, size_t bz)
+{
+	if (UNLIKELY(!(tst->cmd = find_cmd(bp, bz)).z)) {
+		goto fail;
+	}
+	/* reset bp and bz */
+	bz = bz - (tst->cmd.d + tst->cmd.z + 1 - bp);
+	bp = tst->cmd.d + tst->cmd.z + 1;
+	if (UNLIKELY((tst->rest.d = find_shtok(bp, bz)) == NULL)) {
+		goto fail;
+	}
+	/* otherwise set the rest bit already */
+	tst->rest.z = bz - (tst->rest.d - bp);
+
+	/* now the stdout and stderr bits must be in between (or 0) */
+	tst->out = (clit_bit_t){.z = tst->rest.d - bp, bp};
+	tst->err = (clit_bit_t){0U};
+	return 0;
+fail:
+	memset(tst, 0, sizeof(*tst));
+	return -1;
+}
+
+static int
+test_f(clitf_t tf)
+{
+	static struct clit_tst_s tst[1];
+	const char *bp = tf.d;
+	size_t bz = tf.z;
+	int rc;
+
+	for (; find_tst(tst, bp, bz) == 0; bp = tst->rest.d, bz = tst->rest.z) {
+		printf("in %.*s\n", (int)tst->cmd.z, tst->cmd.d);
+		printf("out %.*s\n", (int)tst->out.z, tst->out.d);
+		printf("err %.*s\n", (int)tst->err.z, tst->err.d);
+		printf("rest %.*s\n", (int)tst->rest.z, tst->rest.d);
+	}
+	return 0;
+}
+
 static int
 test(const char *testfile)
 {
 	int fd;
-	int rc = 99;
 	struct stat st;
 	clitf_t tf;
 
 	if ((fd = open(testfile, O_RDONLY)) < 0) {
 		error(0, "Error: cannot open file `%s'", testfile);
-		goto out;
 	} else if (fstat(fd, &st) < 0) {
 		error(0, "Error: cannot stat file `%s'", testfile);
-		goto out;
 	} else if ((tf = mmap_fd(fd, st.st_size)).d == NULL) {
 		error(0, "Error: cannot map file `%s'", testfile);
-		goto out;
-	}
+	} else {
+		/* yaay */
+		int rc;
 
-	const char *beef = tf.d;
-	if (*beef == '$' || beef = memmem(beef, "\n$", 2)) {
-		puts("beef is there:");
-		puts(beef);
+		rc = test_f(tf);
+		munmap_fd(tf);
+		return rc;
 	}
-
-	munmap_fd(tfmp, st.st_size);
-out:
-	return rc;
+	return -1;
 }
 
 
@@ -165,7 +301,9 @@ main(int argc, char *argv[])
 	setenv("endian", "little", 1);
 #endif	/* WORDS_BIGENDIAN */
 
-	rc = test(argi->inputs[0]);
+	if ((rc = test(argi->inputs[0])) < 0) {
+		rc = 99;
+	}
 
 out:
 	cmdline_parser_free(argi);
