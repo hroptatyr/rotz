@@ -30,6 +30,8 @@ EXTRA_DIST += $(srcdir)/rtz-test.sh
 
 clitoris_CPPFLAGS = $(AM_CPPFLAGS)
 clitoris_CPPFLAGS += -D_GNU_SOURCE
+clitoris_LDFLAGS = $(AM_LDFLAGS)
+clitoris_LDFLAGS += -lutil
 
 ## the actual tests here
 TESTS += add_01.tst

@@ -48,6 +48,7 @@
 #include <sys/epoll.h>
 #include <string.h>
 #include <errno.h>
+#include <pty.h>
 
 #if !defined LIKELY
 # define LIKELY(_x)	__builtin_expect((_x), 1)
@@ -233,30 +234,23 @@ static int
 init_chld(struct clit_chld_s ctx[static 1])
 {
 /* set up a connection with /bin/sh to pipe to and read from */
-	int pin[2];
+	int pty_mast;
 	int pou[2];
 
-	if (UNLIKELY(pipe(pin) < 0)) {
-		ctx->chld = -1;
-		return -1;
+	if (0) {
+		;
 	} else if (UNLIKELY(pipe(pou) < 0)) {
 		ctx->chld = -1;
 		return -1;
 	}
 
-	switch ((ctx->chld = vfork())) {
+	switch ((ctx->chld = forkpty(&pty_mast, NULL, NULL, NULL))) {
 	case -1:
 		/* i am an error */
 		return -1;
 
 	case 0:;
 		/* i am the child */
-		/* read from pin and write to pou */
-		close(STDIN_FILENO);
-		close(STDOUT_FILENO);
-		/* pin[0] -> stdin */
-		dup2(pin[0], STDIN_FILENO);
-		close(pin[1]);
 		/* stdout -> pou[1] */
 		dup2(pou[1], STDOUT_FILENO);
 		close(pou[0]);
@@ -264,11 +258,10 @@ init_chld(struct clit_chld_s ctx[static 1])
 
 	default:
 		/* i am the parent, clean up descriptors */
-		close(pin[0]);
 		close(pou[1]);
 
 		/* assign desc, write end of pin */
-		ctx->pin = pin[1];
+		ctx->pin = pty_mast;
 		/* ... and read end of pou */
 		ctx->pou = pou[0];
 
@@ -307,6 +300,8 @@ fini_chld(struct clit_chld_s ctx[static 1])
 	while (waitpid(ctx->chld, &st, 0) != -1);
 	if (WIFEXITED(st)) {
 		return WEXITSTATUS(st);
+	} else if (WIFSIGNALED(st)) {
+		return 0;
 	}
 	return -1;
 }
