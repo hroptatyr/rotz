@@ -82,7 +82,6 @@ struct clit_bit_s {
 struct clit_chld_s {
 	int pin;
 	int pou;
-	int per;
 	int pll;
 	pid_t chld;
 };
@@ -236,15 +235,11 @@ init_chld(struct clit_chld_s ctx[static 1])
 /* set up a connection with /bin/sh to pipe to and read from */
 	int pin[2];
 	int pou[2];
-	int per[2];
 
 	if (UNLIKELY(pipe(pin) < 0)) {
 		ctx->chld = -1;
 		return -1;
 	} else if (UNLIKELY(pipe(pou) < 0)) {
-		ctx->chld = -1;
-		return -1;
-	} else if (UNLIKELY(pipe(per) < 0)) {
 		ctx->chld = -1;
 		return -1;
 	}
@@ -257,41 +252,32 @@ init_chld(struct clit_chld_s ctx[static 1])
 	case 0:;
 		/* i am the child */
 		/* read from pin and write to pou */
-		close(STDIN_FILENO);
-		close(STDOUT_FILENO);
-		close(STDERR_FILENO);
+		close(0);
+		close(1);
 		/* pin[0] -> stdin */
-		dup2(pin[0], STDIN_FILENO);
+		dup2(pin[0], 0);
 		close(pin[1]);
 		/* stdout -> pou[1] */
-		dup2(pou[1], STDOUT_FILENO);
+		dup2(pou[1], 1);
 		close(pou[0]);
-		/* stderr -> per[1] */
-		dup2(per[1], STDERR_FILENO);
-		close(per[0]);
 		execl("/bin/sh", "sh", NULL);
 
 	default:
 		/* i am the parent, clean up descriptors */
 		close(pin[0]);
 		close(pou[1]);
-		close(per[1]);
 
 		/* assign desc, write end of pin */
 		ctx->pin = pin[1];
-		/* ... and read end of pou and per */
+		/* ... and read end of pou */
 		ctx->pou = pou[0];
-		ctx->per = per[0];
 
 		if ((ctx->pll = epoll_create1(EPOLL_CLOEXEC)) >= 0) {
 			struct epoll_event ev = {
 				EPOLLIN | EPOLLRDHUP | EPOLLHUP,
 			};
 
-			ev.data.fd = ctx->pou;
 			epoll_ctl(ctx->pll, EPOLL_CTL_ADD, ctx->pou, &ev);
-			ev.data.fd = ctx->per;
-			epoll_ctl(ctx->pll, EPOLL_CTL_ADD, ctx->per, &ev);
 		}
 
 		/* just to be on the safe side, send a false */
@@ -312,13 +298,11 @@ fini_chld(struct clit_chld_s ctx[static 1])
 
 	/* end of epoll monitoring */
 	epoll_ctl(ctx->pll, EPOLL_CTL_DEL, ctx->pou, NULL);
-	epoll_ctl(ctx->pll, EPOLL_CTL_DEL, ctx->per, NULL);
 	close(ctx->pll);
 
 	/* and indicate end of pipes */
 	close(ctx->pin);
 	close(ctx->pou);
-	close(ctx->per);
 
 	while (waitpid(ctx->chld, &st, 0) != -1);
 	if (WIFEXITED(st)) {
@@ -330,48 +314,35 @@ fini_chld(struct clit_chld_s ctx[static 1])
 static int
 run_tst(struct clit_chld_s ctx[static 1], struct clit_tst_s tst[static 1])
 {
-	static struct epoll_event ev[2];
+	static struct epoll_event ev[1];
 	int rc = 0;
 
 	write(ctx->pin, tst->cmd.d, tst->cmd.z);
-	if (tst->out.z > 0U || tst->err.z > 0U) {
+	if (tst->out.z > 0U) {
 		static char *buf;
 		static size_t bsz;
-		int nfd;
 
-		if ((nfd = epoll_wait(
-			     ctx->pll, ev, countof(ev), 2000/*ms*/)) <= 0) {
+		if (epoll_wait(ctx->pll, ev, countof(ev), 2000/*ms*/) <= 0) {
 			/* indicate timeout */
 			puts("timeout");
 			return -1;
 		}
 
 		/* check and maybe realloc read buffer */
-		for (int i = 0; i < nfd; i++) {
-			clit_bit_t b;
-
-			if (ev[i].data.fd == ctx->pou) {
-				b = tst->out;
-			} else if (ev[i].data.fd == ctx->per) {
-				b = tst->err;
-			}
-
-			if (b.z > bsz) {
-				bsz = ((b.z / 4096U) + 1U) * 4096U;
-				buf = realloc(buf, bsz);
-			}
-
-			if (read(ev[i].data.fd, buf, bsz) != b.z ||
-			    /* also check for equality */
-			    memcmp(buf, b.d, b.z)) {
-				puts("output/error differs");
-				rc = -1;
-			}
+		if (tst->out.z > bsz) {
+			bsz = ((tst->out.z / 4096U) + 1U) * 4096U;
+			buf = realloc(buf, bsz);
+		}
+		if (read(ctx->pou, buf, bsz) != tst->out.z ||
+		    memcmp(buf, tst->out.d, tst->out.z)) {
+			/* also check for equality */
+			puts("output differs");
+			rc = -1;
 		}
 	} else {
 		/* we expect no output, check if there is some anyway */
 		if (epoll_wait(ctx->pll, ev, countof(ev), 100/*ms*/) > 0) {
-			puts("output/error present but not expected");
+			puts("output present but not expected");
 			rc = -1;
 		}
 	}
