@@ -314,13 +314,13 @@ fini_chld(struct clit_chld_s ctx[static 1])
 static int
 run_tst(struct clit_chld_s ctx[static 1], struct clit_tst_s tst[static 1])
 {
+	static struct epoll_event ev[1];
 	int rc = 0;
 
 	write(ctx->pin, tst->cmd.d, tst->cmd.z);
 	if (tst->out.z > 0U) {
 		static char *buf;
 		static size_t bsz;
-		static struct epoll_event ev[1];
 
 		if (epoll_wait(ctx->pll, ev, countof(ev), 2000/*ms*/) <= 0) {
 			/* indicate timeout */
@@ -337,6 +337,12 @@ run_tst(struct clit_chld_s ctx[static 1], struct clit_tst_s tst[static 1])
 		    memcmp(buf, tst->out.d, tst->out.z)) {
 			/* also check for equality */
 			puts("output differs");
+			rc = -1;
+		}
+	} else {
+		/* we expect no output, check if there is some anyway */
+		if (epoll_wait(ctx->pll, ev, countof(ev), 100/*ms*/) > 0) {
+			puts("output present but not expected");
 			rc = -1;
 		}
 	}
