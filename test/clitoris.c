@@ -312,6 +312,27 @@ fini_chld(struct clit_chld_s ctx[static 1])
 }
 
 static int
+diff_out(struct clit_chld_s ctx[static 1], clit_bit_t exp)
+{
+	static char *buf;
+	static size_t bsz;
+	int rc = 0;
+
+	/* check and maybe realloc read buffer */
+	if (exp.z > bsz) {
+		bsz = ((exp.z / 4096U) + 1U) * 4096U;
+		buf = realloc(buf, bsz);
+	}
+
+	if (read(ctx->pou, buf, bsz) != exp.z || memcmp(buf, exp.d, exp.z)) {
+		/* also check for equality */
+		puts("output differs");
+		rc = 1;
+	}
+	return rc;
+}
+
+static int
 run_tst(struct clit_chld_s ctx[static 1], struct clit_tst_s tst[static 1])
 {
 	static struct epoll_event ev[1];
@@ -319,26 +340,12 @@ run_tst(struct clit_chld_s ctx[static 1], struct clit_tst_s tst[static 1])
 
 	write(ctx->pin, tst->cmd.d, tst->cmd.z);
 	if (tst->out.z > 0U) {
-		static char *buf;
-		static size_t bsz;
-
 		if (epoll_wait(ctx->pll, ev, countof(ev), 2000/*ms*/) <= 0) {
 			/* indicate timeout */
 			puts("timeout");
 			return -1;
 		}
-
-		/* check and maybe realloc read buffer */
-		if (tst->out.z > bsz) {
-			bsz = ((tst->out.z / 4096U) + 1U) * 4096U;
-			buf = realloc(buf, bsz);
-		}
-		if (read(ctx->pou, buf, bsz) != tst->out.z ||
-		    memcmp(buf, tst->out.d, tst->out.z)) {
-			/* also check for equality */
-			puts("output differs");
-			rc = -1;
-		}
+		rc = diff_out(ctx, tst->out);
 	} else {
 		/* we expect no output, check if there is some anyway */
 		if (epoll_wait(ctx->pll, ev, countof(ev), 100/*ms*/) > 0) {
