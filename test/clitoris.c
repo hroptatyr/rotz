@@ -318,9 +318,6 @@ test_f(clitf_t tf)
 		return -1;
 	}
 	for (; find_tst(tst, bp, bz) == 0; bp = tst->rest.d, bz = tst->rest.z) {
-		printf("in %.*s\n", (int)tst->cmd.z, tst->cmd.d);
-		printf("out %.*s\n", (int)tst->out.z, tst->out.d);
-		printf("err %.*s\n", (int)tst->err.z, tst->err.d);
 		run_tst(ctx, tst);
 	}
 	rc = fini_chld(ctx);
