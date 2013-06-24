@@ -170,7 +170,7 @@ find_cmd(const char *bp, size_t bz)
 			bp = res + 1U;
 			goto eof;
 		} else if (res == bp || res[-1] != '\\') {
-			resbit.z = res - resbit.d;
+			resbit.z = res + 1 - resbit.d;
 			break;
 		}
 	}
@@ -205,8 +205,8 @@ find_tst(struct clit_tst_s tst[static 1], const char *bp, size_t bz)
 		goto fail;
 	}
 	/* reset bp and bz */
-	bz = bz - (tst->cmd.d + tst->cmd.z + 1 - bp);
-	bp = tst->cmd.d + tst->cmd.z + 1;
+	bz = bz - (tst->cmd.d + tst->cmd.z - bp);
+	bp = tst->cmd.d + tst->cmd.z;
 	if (UNLIKELY((tst->rest.d = find_shtok(bp, bz)) == NULL)) {
 		goto fail;
 	}
