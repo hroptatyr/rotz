@@ -43,6 +43,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <string.h>
 #include <errno.h>
 
@@ -70,6 +71,12 @@ struct clitf_s {
 struct clit_bit_s {
 	size_t z;
 	const char *d;
+};
+
+struct clit_chld_s {
+	int pin;
+	int pou;
+	pid_t chld;
 };
 
 /* a test is the command (inlcuding stdin), stdout result, and stderr result */
@@ -184,7 +191,7 @@ eof:
 	     (eotok = memmem(bp, bz, tok.d, tok.z)) != NULL;
 	     bz -= eotok + 1U - bp, bp = eotok + 1U) {
 		if (LIKELY(eotok[-1] == '\n' && eotok[tok.z] == '\n')) {
-			resbit.z = eotok + tok.z - resbit.d;
+			resbit.z = eotok + tok.z + 1U - resbit.d;
 			break;
 		}
 	}
@@ -216,20 +223,108 @@ fail:
 }
 
 static int
+init_chld(struct clit_chld_s ctx[static 1])
+{
+/* set up a connection with /bin/sh to pipe to and read from */
+	int pin[2];
+	int pou[2];
+
+	if (UNLIKELY(pipe(pin) < 0)) {
+		ctx->chld = -1;
+		return -1;
+	} else if (UNLIKELY(pipe(pou) < 0)) {
+		ctx->chld = -1;
+		return -1;
+	}
+
+	switch ((ctx->chld = vfork())) {
+	case -1:
+		/* i am an error */
+		return -1;
+
+	case 0:;
+		/* i am the child */
+		/* read from pin and write to pou */
+		close(0);
+		close(1);
+		/* pin[0] -> stdin */
+		dup2(pin[0], 0);
+		close(pin[1]);
+		/* stdout -> pou[1] */
+		dup2(pou[1], 1);
+		close(pou[0]);
+		execl("/bin/sh", "sh", NULL);
+
+	default:
+		/* i am the parent, clean up descriptors */
+		close(pin[0]);
+		close(pou[1]);
+
+		/* assign desc, write end of pin */
+		ctx->pin = pin[1];
+		/* ... and read end of pou */
+		ctx->pou = pou[0];
+
+		/* just to be on the safe side, send a false */
+		write(ctx->pin, "false\n", sizeof("false\n") - 1U);
+		break;
+	}
+	return 0;
+}
+
+static int
+fini_chld(struct clit_chld_s ctx[static 1])
+{
+	int st;
+
+	if (UNLIKELY(ctx->chld == -1)) {
+		return -1;
+	}
+
+	/* otherwise indicate end of pipes */
+	close(ctx->pin);
+	close(ctx->pou);
+
+	while (waitpid(ctx->chld, &st, 0) != -1);
+	if (WIFEXITED(st)) {
+		return WEXITSTATUS(st);
+	}
+	return -1;
+}
+
+static int
+run_tst(struct clit_chld_s ctx[static 1], struct clit_tst_s tst[static 1])
+{
+	static char buf[4096U];
+	int rc;
+
+	write(ctx->pin, tst->cmd.d, tst->cmd.z);
+	if (tst->out.z > 0U) {
+		read(ctx->pou, buf, sizeof(buf));
+	}
+	return rc;
+}
+
+static int
 test_f(clitf_t tf)
 {
+	static struct clit_chld_s ctx[1];
 	static struct clit_tst_s tst[1];
 	const char *bp = tf.d;
 	size_t bz = tf.z;
-	int rc;
+	int rc = -1;
 
+	if (UNLIKELY(init_chld(ctx) < 0)) {
+		return -1;
+	}
 	for (; find_tst(tst, bp, bz) == 0; bp = tst->rest.d, bz = tst->rest.z) {
 		printf("in %.*s\n", (int)tst->cmd.z, tst->cmd.d);
 		printf("out %.*s\n", (int)tst->out.z, tst->out.d);
 		printf("err %.*s\n", (int)tst->err.z, tst->err.d);
-		printf("rest %.*s\n", (int)tst->rest.z, tst->rest.d);
+		run_tst(ctx, tst);
 	}
-	return 0;
+	rc = fini_chld(ctx);
+	return rc;
 }
 
 static int
