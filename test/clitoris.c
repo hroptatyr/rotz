@@ -38,8 +38,9 @@
 # include "config.h"
 #endif	/* HAVE_CONFIG_H */
 #include <unistd.h>
-#include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -295,12 +296,22 @@ fini_chld(struct clit_chld_s ctx[static 1])
 static int
 run_tst(struct clit_chld_s ctx[static 1], struct clit_tst_s tst[static 1])
 {
-	static char buf[4096U];
 	int rc;
 
 	write(ctx->pin, tst->cmd.d, tst->cmd.z);
 	if (tst->out.z > 0U) {
-		read(ctx->pou, buf, sizeof(buf));
+		static char *buf;
+		static size_t bsz;
+
+		if (tst->out.z > bsz) {
+			bsz = ((tst->out.z / 4096U) + 1U) * 4096U;
+			buf = realloc(buf, bsz);
+		}
+		if (read(ctx->pou, buf, bsz) != tst->out.z ||
+		    memcmp(buf, tst->out.d, tst->out.z)) {
+			/* also check for equality */
+			rc = -1;
+		}
 	}
 	return rc;
 }
