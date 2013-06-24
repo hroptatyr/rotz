@@ -45,6 +45,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <sys/epoll.h>
 #include <string.h>
 #include <errno.h>
 
@@ -54,6 +55,10 @@
 #if !defined UNLIKELY
 # define UNLIKELY(_x)	__builtin_expect((_x), 0)
 #endif	/* UNLIKELY */
+
+#if !defined countof
+# define countof(x)	(sizeof(x) / sizeof(*x))
+#endif	/* !countof */
 
 #if !defined with
 # define with(args...)	for (args, *__ep__ = (void*)1; __ep__; __ep__ = 0)
@@ -77,6 +82,7 @@ struct clit_bit_s {
 struct clit_chld_s {
 	int pin;
 	int pou;
+	int pll;
 	pid_t chld;
 };
 
@@ -266,6 +272,14 @@ init_chld(struct clit_chld_s ctx[static 1])
 		/* ... and read end of pou */
 		ctx->pou = pou[0];
 
+		if ((ctx->pll = epoll_create1(EPOLL_CLOEXEC)) >= 0) {
+			struct epoll_event ev = {
+				EPOLLIN | EPOLLRDHUP | EPOLLHUP,
+			};
+
+			epoll_ctl(ctx->pll, EPOLL_CTL_ADD, ctx->pou, &ev);
+		}
+
 		/* just to be on the safe side, send a false */
 		write(ctx->pin, "false\n", sizeof("false\n") - 1U);
 		break;
@@ -282,7 +296,11 @@ fini_chld(struct clit_chld_s ctx[static 1])
 		return -1;
 	}
 
-	/* otherwise indicate end of pipes */
+	/* end of epoll monitoring */
+	epoll_ctl(ctx->pll, EPOLL_CTL_DEL, ctx->pou, NULL);
+	close(ctx->pll);
+
+	/* and indicate end of pipes */
 	close(ctx->pin);
 	close(ctx->pou);
 
@@ -296,13 +314,21 @@ fini_chld(struct clit_chld_s ctx[static 1])
 static int
 run_tst(struct clit_chld_s ctx[static 1], struct clit_tst_s tst[static 1])
 {
-	int rc;
+	int rc = 0;
 
 	write(ctx->pin, tst->cmd.d, tst->cmd.z);
 	if (tst->out.z > 0U) {
 		static char *buf;
 		static size_t bsz;
+		static struct epoll_event ev[1];
 
+		if (epoll_wait(ctx->pll, ev, countof(ev), 2000/*ms*/) <= 0) {
+			/* indicate timeout */
+			puts("timeout");
+			return -1;
+		}
+
+		/* check and maybe realloc read buffer */
 		if (tst->out.z > bsz) {
 			bsz = ((tst->out.z / 4096U) + 1U) * 4096U;
 			buf = realloc(buf, bsz);
@@ -310,6 +336,7 @@ run_tst(struct clit_chld_s ctx[static 1], struct clit_tst_s tst[static 1])
 		if (read(ctx->pou, buf, bsz) != tst->out.z ||
 		    memcmp(buf, tst->out.d, tst->out.z)) {
 			/* also check for equality */
+			puts("output differs");
 			rc = -1;
 		}
 	}
@@ -329,9 +356,15 @@ test_f(clitf_t tf)
 		return -1;
 	}
 	for (; find_tst(tst, bp, bz) == 0; bp = tst->rest.d, bz = tst->rest.z) {
-		run_tst(ctx, tst);
+		if ((rc = run_tst(ctx, tst)) < 0) {
+			break;
+		}
 	}
-	rc = fini_chld(ctx);
+	with (int fin_rc) {
+		if ((fin_rc = fini_chld(ctx))) {
+			rc = fin_rc;
+		}
+	}
 	return rc;
 }
 
