@@ -10,10 +10,8 @@ AM_CFLAGS = $(EXTRA_CFLAGS)
 AM_CPPFLAGS = -D_POSIX_C_SOURCE=200112L -D_XOPEN_SOURCE=600 -D_BSD_SOURCE
 AM_CPPFLAGS += -DTEST
 
-EXTRA_DIST =
-EXTRA_DIST += $(BUILT_SOURCES)
+EXTRA_DIST = $(BUILT_SOURCES) $(TESTS)
 TESTS =
-TESTS_ENVIRONMENT =
 TEST_EXTENSIONS =
 BUILT_SOURCES =
 dt_tests =
@@ -23,15 +21,8 @@ check_PROGRAMS =
 CLEANFILES = $(check_PROGRAMS)
 
 TEST_EXTENSIONS += .tst
-check_PROGRAMS += clitoris
 TST_LOG_COMPILER = $(builddir)/clitoris
 AM_TST_LOG_FLAGS = --builddir $(top_builddir)/src
-EXTRA_DIST += $(srcdir)/rtz-test.sh
-
-clitoris_CPPFLAGS = $(AM_CPPFLAGS)
-clitoris_CPPFLAGS += -D_GNU_SOURCE
-clitoris_LDFLAGS = $(AM_LDFLAGS) -static
-clitoris_LDFLAGS += -lutil
 
 ## the actual tests here
 TESTS += add_01.tst
@@ -41,9 +32,15 @@ TESTS += del_01.tst
 TESTS += del_02.tst
 TESTS += del_03.tst
 
+## tests will generate a rotz.tcb file
+CLEANFILES += rotz.tcb
 
 ## our friendly helpers
 check_PROGRAMS += clitoris
+clitoris_CPPFLAGS = $(AM_CPPFLAGS)
+clitoris_CPPFLAGS += -D_GNU_SOURCE
+clitoris_LDFLAGS = $(AM_LDFLAGS) -static
+clitoris_LDFLAGS += -lutil
 BUILT_SOURCES += clitoris.x clitoris.h
 
 
