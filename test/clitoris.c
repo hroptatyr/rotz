@@ -362,7 +362,7 @@ run_tst(struct clit_chld_s ctx[static 1], struct clit_tst_s tst[static 1])
 		rc = diff_out(ctx, tst->out);
 	} else {
 		/* we expect no output, check if there is some anyway */
-		if (epoll_wait(ctx->pll, ev, countof(ev), 100/*ms*/) > 0) {
+		if (epoll_wait(ctx->pll, ev, countof(ev), 10/*ms*/) > 0) {
 			puts("output present but not expected");
 			rc = -1;
 		}
