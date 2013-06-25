@@ -32,6 +32,8 @@ TESTS += del_01.tst
 TESTS += del_02.tst
 TESTS += del_03.tst
 
+## tests will generate a rotz.tcb file
+CLEANFILES += rotz.tcb
 
 ## our friendly helpers
 check_PROGRAMS += clitoris
