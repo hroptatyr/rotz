@@ -168,10 +168,12 @@ find_cmd(const char *bp, size_t bz)
 
 	/* find the new line bit */
 	for (const char *res;
-	     (res = memchr(bp, '\n', bz)) != NULL; bp = res + 1U) {
-		bz -= (res + 1U - bp);
-		/* check for trailing \ or <<EOF */
-		if (UNLIKELY((tok.d = memmem(bp, bz, "<<", 2)) != NULL)) {
+	     (res = memchr(bp, '\n', bz)) != NULL;
+	     bz -= (res + 1U - bp), bp = res + 1U) {
+		size_t lz = (res + 1U - bp);
+
+		/* check for trailing \ or <<EOF (in that line) */
+		if (UNLIKELY((tok.d = memmem(bp, lz, "<<", 2)) != NULL)) {
 			tok.d += 2U;
 			tok.z = res - tok.d;
 			/* analyse this eof token */
