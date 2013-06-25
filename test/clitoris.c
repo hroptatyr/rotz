@@ -458,19 +458,21 @@ main(int argc, char *argv[])
 	}
 
 	/* also bang builddir to path */
-	with (char *path = getenv("PATH"), *blddir = getenv("builddir")) {
-		size_t patz = strlen(path);
-		size_t blddiz = strlen(blddir);
-		char *newp;
+	with (char *blddir = getenv("builddir")) {
+		if (blddir != NULL) {
+			size_t blddiz = strlen(blddir);
+			char *path = getenv("PATH");
+			size_t patz = strlen(path);
+			char *newp;
 
-		newp = malloc(patz + blddiz + 1U/*:*/ + 1U/*\nul*/);
-		memcpy(newp, blddir, blddiz);
-		newp[blddiz] = ':';
-		memcpy(newp + blddiz + 1U, path, patz + 1U);
-		setenv("PATH", newp, 1);
-		free(newp);
+			newp = malloc(patz + blddiz + 1U/*:*/ + 1U/*\nul*/);
+			memcpy(newp, blddir, blddiz);
+			newp[blddiz] = ':';
+			memcpy(newp + blddiz + 1U, path, patz + 1U);
+			setenv("PATH", newp, 1);
+			free(newp);
+		}
 	}
-
 	/* just to be clear about this */
 #if defined WORDS_BIGENDIAN
 	setenv("endian", "big", 1);
