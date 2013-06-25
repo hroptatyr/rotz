@@ -1,7 +1,7 @@
 args "--unamed-opts --long-help --no-handle-error"
-package "rtz-test"
-usage "rtz-test [OPTION]... TEST_FILE"
-description "Run .tst regression test file"
+package "clitoris"
+usage "clitoris [OPTION]... TEST_FILE"
+description "Run .clit regression test files."
 
 option "builddir" -
 	"Specify where the compiled binaries can be found."
