@@ -23,14 +23,8 @@ check_PROGRAMS =
 CLEANFILES = $(check_PROGRAMS)
 
 TEST_EXTENSIONS += .tst
-check_PROGRAMS += clitoris
 TST_LOG_COMPILER = $(builddir)/clitoris
 AM_TST_LOG_FLAGS = --builddir $(top_builddir)/src
-
-clitoris_CPPFLAGS = $(AM_CPPFLAGS)
-clitoris_CPPFLAGS += -D_GNU_SOURCE
-clitoris_LDFLAGS = $(AM_LDFLAGS) -static
-clitoris_LDFLAGS += -lutil
 
 ## the actual tests here
 TESTS += add_01.tst
@@ -43,6 +37,10 @@ TESTS += del_03.tst
 
 ## our friendly helpers
 check_PROGRAMS += clitoris
+clitoris_CPPFLAGS = $(AM_CPPFLAGS)
+clitoris_CPPFLAGS += -D_GNU_SOURCE
+clitoris_LDFLAGS = $(AM_LDFLAGS) -static
+clitoris_LDFLAGS += -lutil
 BUILT_SOURCES += clitoris.x clitoris.h
 
 
