@@ -26,7 +26,6 @@ TEST_EXTENSIONS += .tst
 check_PROGRAMS += clitoris
 TST_LOG_COMPILER = $(builddir)/clitoris
 AM_TST_LOG_FLAGS = --builddir $(top_builddir)/src
-EXTRA_DIST += $(srcdir)/rtz-test.sh
 
 clitoris_CPPFLAGS = $(AM_CPPFLAGS)
 clitoris_CPPFLAGS += -D_GNU_SOURCE
