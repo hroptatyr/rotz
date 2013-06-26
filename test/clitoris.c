@@ -1,4 +1,4 @@
-/*** clitoris.c -- command line testing oris
+/*** clitoris.c -- command-line-interface tester or is it?
  *
  * Copyright (C) 2013 Sebastian Freundt
  *
@@ -83,8 +83,12 @@ struct clit_bit_s {
 struct clit_chld_s {
 	int pin;
 	int pou;
+	int per;
 	int pll;
 	pid_t chld;
+
+	unsigned int verbosep:1;
+	unsigned int ptyp:1;
 };
 
 /* a test is the command (inlcuding stdin), stdout result, and stderr result */
@@ -94,6 +98,10 @@ struct clit_tst_s {
 	clit_bit_t err;
 	clit_bit_t rest;
 };
+
+
+static sigset_t fatal_signal_set[1];
+static sigset_t empty_signal_set[1];
 
 
 static void
@@ -129,6 +137,30 @@ static int
 munmap_fd(clitf_t map)
 {
 	return munmap(map.d, map.z);
+}
+
+static void
+block_sigs(void)
+{
+	(void)sigprocmask(SIG_BLOCK, fatal_signal_set, (sigset_t*)NULL);
+	return;
+}
+
+static void
+unblock_sigs(void)
+{
+	sigprocmask(SIG_SETMASK, empty_signal_set, (sigset_t*)NULL);
+	return;
+}
+
+static pid_t
+pfork(int *pty)
+{
+	if (UNLIKELY(pty == NULL)) {
+		errno = ENOMEM;
+		return -1;
+	}
+	return forkpty(pty, NULL, NULL, NULL);
 }
 
 
@@ -233,98 +265,65 @@ fail:
 }
 
 static int
+find_opt(struct clit_chld_s ctx[static 1], const char *bp, size_t bz)
+{
+	static const char magic[] = "setopt ";
+
+	for (const char *mp;
+	     (mp = memmem(bp, bz, magic, sizeof(magic) - 1)) != NULL;
+	     bz -= (mp + 1U) - bp, bp = mp + 1U) {
+		unsigned int opt;
+
+		/* check if it's setopt or unsetopt */
+		if (mp == bp || LIKELY(mp[-1] == '\n')) {
+			/* yay, it's a genuine setopt */
+			opt = 1U;
+		} else if (mp >= bp + 2U && mp[-2] == 'u' && mp[-1] == 'n' &&
+			   (mp == bp + 2U || mp > bp + 2U && mp[-3] == '\n')) {
+			/* it's a genuine unsetopt */
+			opt = 0U;
+		} else {
+			/* found rubbish then */
+			mp += sizeof(magic) - 1U;
+			continue;
+		}
+#define CMP(x, lit)	(strncmp((x), (lit), sizeof(lit) - 1))
+		/* parse the option value */
+		if ((mp += sizeof(magic) - 1U) == NULL) {
+			;
+		} else if (CMP(mp, "verbose\n") == 0) {
+			ctx->verbosep = opt;
+		} else if (CMP(mp, "pseudo-tty\n") == 0) {
+			ctx->ptyp = opt;
+		}
+#undef CMP
+	}
+	return 0;
+}
+
+static int
 init_chld(struct clit_chld_s ctx[static 1])
 {
-/* set up a connection with /bin/sh to pipe to and read from */
-	int pty;
-	int pin[2];
-	int pou[2];
+	ctx->pll = epoll_create1(EPOLL_CLOEXEC);
 
-	if (0) {
-		;
-	} else if (UNLIKELY(pipe(pin) < 0)) {
-		ctx->chld = -1;
-		return -1;
-	} else if (UNLIKELY(pipe(pou) < 0)) {
-		ctx->chld = -1;
-		return -1;
-	}
-
-	/* allow both vfork() and forkpty() if requested */
-	switch ((ctx->chld = 1 ? vfork() : forkpty(&pty, NULL, NULL, NULL))) {
-	case -1:
-		/* i am an error */
-		return -1;
-
-	case 0:;
-		/* i am the child, read from pin and write to pou */
-		if (1) {
-			close(STDIN_FILENO);
-			close(STDOUT_FILENO);
-			/* pin[0] ->stdin */
-			dup2(pin[0], STDIN_FILENO);
-			close(pin[1]);
-		}
-		/* stdout -> pou[1] */
-		dup2(pou[1], STDOUT_FILENO);
-		close(pou[0]);
-		execl("/bin/sh", "sh", NULL);
-
-	default:
-		/* i am the parent, clean up descriptors */
-		if (1) {
-			close(pin[0]);
-		}
-		close(pou[1]);
-
-		/* assign desc, write end of pin */
-		if (1) {
-			ctx->pin = pin[1];
-		} else {
-			ctx->pin = pty;
-		}
-		/* ... and read end of pou */
-		ctx->pou = pou[0];
-
-		if ((ctx->pll = epoll_create1(EPOLL_CLOEXEC)) >= 0) {
-			struct epoll_event ev = {
-				EPOLLIN | EPOLLRDHUP | EPOLLHUP,
-			};
-
-			epoll_ctl(ctx->pll, EPOLL_CTL_ADD, ctx->pou, &ev);
-		}
-
-		/* just to be on the safe side, send a false */
-		write(ctx->pin, "false\n", sizeof("false\n") - 1U);
-		break;
-	}
+	/* set up the set of fatal signals */
+	sigemptyset(fatal_signal_set);
+	sigaddset(fatal_signal_set, SIGHUP);
+	sigaddset(fatal_signal_set, SIGQUIT);
+	sigaddset(fatal_signal_set, SIGINT);
+	sigaddset(fatal_signal_set, SIGTERM);
+	sigaddset(fatal_signal_set, SIGXCPU);
+	sigaddset(fatal_signal_set, SIGXFSZ);
+	/* also the empty set */
+	sigemptyset(empty_signal_set);
 	return 0;
 }
 
 static int
 fini_chld(struct clit_chld_s ctx[static 1])
 {
-	int st;
-
-	if (UNLIKELY(ctx->chld == -1)) {
-		return -1;
-	}
-
 	/* end of epoll monitoring */
-	epoll_ctl(ctx->pll, EPOLL_CTL_DEL, ctx->pou, NULL);
-	close(ctx->pll);
-
-	/* and indicate end of pipes */
-	close(ctx->pin);
-	close(ctx->pou);
-
-	while (waitpid(ctx->chld, &st, 0) != ctx->chld);
-	if (WIFEXITED(st)) {
-		return WEXITSTATUS(st);
-	} else if (WIFSIGNALED(st)) {
-		return 0;
-	}
-	return -1;
+	return close(ctx->pll);
 }
 
 static int
@@ -342,16 +341,21 @@ diff_bits(clit_bit_t exp, clit_bit_t is)
 		return -1;
 	}
 
+	block_sigs();
+
 	switch ((difftool = vfork())) {
 	case -1:
 		/* i am an error */
+		unblock_sigs();
 		break;
 
 	case 0:;
+		/* i am the child */
 		static char fa[64];
 		static char fb[64];
 
-		/* i am the child */
+		unblock_sigs();
+
 		close(STDIN_FILENO);
 		close(STDOUT_FILENO);
 		/* kick the write ends of our pipes */
@@ -365,19 +369,24 @@ diff_bits(clit_bit_t exp, clit_bit_t is)
 		snprintf(fb, sizeof(fb), "/dev/fd/%d", *pin_b);
 
 		execlp("diff", "diff", fa, fb, NULL);
+		error(0, "execlp failed");
+		_exit(EXIT_FAILURE);
 
 	default:;
+		/* i am the parent */
 		int st;
 
-		/* i am the parent, clean up descriptors */
+		/* clean up descriptors */
 		close(*pin_a);
 		close(*pin_b);
 
-		/* just to be on the safe side, send a false */
+		/* feed the stuff we want diff'd to the descriptors */
 		write(pin_a[1], exp.d, exp.z);
 		write(pin_b[1], is.d, is.z);
 		close(pin_a[1]);
 		close(pin_b[1]);
+
+		unblock_sigs();
 
 		while (waitpid(difftool, &st, 0) != difftool);
 		if (WIFEXITED(st)) {
@@ -415,28 +424,160 @@ diff_out(struct clit_chld_s ctx[static 1], clit_bit_t exp)
 }
 
 static int
+init_tst(struct clit_chld_s ctx[static 1])
+{
+/* set up a connection with /bin/sh to pipe to and read from */
+	int pty;
+	int pin[2];
+	int pou[2];
+	int per[2];
+
+	if (0) {
+		;
+	} else if (UNLIKELY(pipe(pin) < 0)) {
+		ctx->chld = -1;
+		return -1;
+	} else if (UNLIKELY(pipe(pou) < 0)) {
+		ctx->chld = -1;
+		return -1;
+	} else if (UNLIKELY(ctx->ptyp && pipe(per) < 0)) {
+		ctx->chld = -1;
+		return -1;
+	}
+
+	block_sigs();
+	switch ((ctx->chld = LIKELY(!ctx->ptyp) ? vfork() : pfork(&pty))) {
+	case -1:
+		/* i am an error */
+		unblock_sigs();
+		return -1;
+
+	case 0:
+		/* i am the child */
+		unblock_sigs();
+		if (UNLIKELY(ctx->ptyp)) {
+			/* in pty mode connect child's stderr to parent's */
+			;
+		}
+
+		/* read from pin and write to pou */
+		if (LIKELY(!ctx->ptyp)) {
+			close(STDIN_FILENO);
+			close(STDOUT_FILENO);
+			/* pin[0] ->stdin */
+			dup2(pin[0], STDIN_FILENO);
+		} else {
+			close(STDERR_FILENO);
+			dup2(per[1], STDERR_FILENO);
+			close(per[0]);
+			close(per[1]);
+		}
+		close(pin[0]);
+		close(pin[1]);
+
+		/* stdout -> pou[1] */
+		dup2(pou[1], STDOUT_FILENO);
+		close(pou[0]);
+		close(pou[1]);
+		execl("/bin/sh", "sh", NULL);
+		error(0, "execl failed");
+		_exit(EXIT_FAILURE);
+
+	default:
+		/* i am the parent, clean up descriptors */
+		close(pin[0]);
+		if (UNLIKELY(ctx->ptyp)) {
+			close(pin[1]);
+		}
+		close(pou[1]);
+
+		/* assign desc, write end of pin */
+		if (LIKELY(!ctx->ptyp)) {
+			ctx->pin = pin[1];
+		} else {
+			ctx->pin = pty;
+			ctx->per = per[0];
+			close(per[1]);
+		}
+		/* ... and read end of pou */
+		ctx->pou = pou[0];
+
+		if (LIKELY(ctx->pll >= 0)) {
+			static struct epoll_event ev = {
+				EPOLLIN | EPOLLONESHOT,
+			};
+			epoll_ctl(ctx->pll, EPOLL_CTL_ADD, ctx->pou, &ev);
+		}
+		break;
+	}
+	return 0;
+}
+
+static int
 run_tst(struct clit_chld_s ctx[static 1], struct clit_tst_s tst[static 1])
 {
 	static struct epoll_event ev[1];
-	int rc = 0;
+	int st;
+	int rc;
+	int nev;
 
+	if (UNLIKELY(init_tst(ctx) < 0)) {
+		return -1;
+	}
 	write(ctx->pin, tst->cmd.d, tst->cmd.z);
-	if (tst->out.z > 0U) {
-		if (epoll_wait(ctx->pll, ev, countof(ev), 2000/*ms*/) <= 0) {
-			/* indicate timeout */
-			puts("timeout");
-			return -1;
-		}
-		rc = diff_out(ctx, tst->out);
+
+	unblock_sigs();
+
+	if (LIKELY(!ctx->ptyp)) {
+		/* indicate we're not writing anymore on the child's stdin */
+		close(ctx->pin);
 	} else {
-		/* we expect no output, check if there is some anyway */
-		if (epoll_wait(ctx->pll, ev, countof(ev), 10/*ms*/) > 0) {
-			puts("output present but not expected");
-			rc = -1;
-		}
+		write(ctx->pin, "exit $?\n", 8U);
+	}
+
+	while (waitpid(ctx->chld, &st, 0) != ctx->chld);
+	if (LIKELY(WIFEXITED(st))) {
+		rc = WEXITSTATUS(st);
+	} else {
+		rc = 1;
+	}
+
+	if (UNLIKELY(ctx->ptyp)) {
+		/* also close child's stdin here */
+		close(ctx->pin);
+	}
+
+	/* snarf child's stdout */
+	errno = 0;
+	if (UNLIKELY((nev = epoll_wait(ctx->pll, ev, countof(ev), 0)) < 0)) {
+		/* uh oh */
+		;
+	} else if (tst->out.z > 0U && (nev == 0 || !(ev[0].events & EPOLLIN))) {
+		error(0, "output expected, none there");
+		rc = -1;
+	} else if (tst->out.z > 0U && (ev[0].events & EPOLLIN)) {
+		rc = diff_out(ctx, tst->out);
+	} else if (tst->out.z == 0U && nev > 0 && (ev[0].events & EPOLLIN)) {
+		error(0, "output present but not expected");
+		rc = -1;
+	}
+
+	/* now indicate we won't be reading stuff from now on */
+	close(ctx->pou);
+	/* also connect per's out end with stderr */
+	if (UNLIKELY(ctx->ptyp)) {
+		for (ssize_t nsp;
+		     (nsp = splice(
+			      ctx->per, NULL, STDERR_FILENO, NULL,
+			      4096U, SPLICE_F_MOVE)) == 4096U;);
+		close(ctx->per);
 	}
 	return rc;
 }
+
+
+static int verbosep;
+static int ptyp;
 
 static int
 test_f(clitf_t tf)
@@ -445,20 +586,35 @@ test_f(clitf_t tf)
 	static struct clit_tst_s tst[1];
 	const char *bp = tf.d;
 	size_t bz = tf.z;
-	int rc = -1;
+	int rc = 0;
 
 	if (UNLIKELY(init_chld(ctx) < 0)) {
 		return -1;
 	}
+
+	/* preset options */
+	if (verbosep) {
+		ctx->verbosep = 1U;
+	}
+	if (ptyp) {
+		ctx->ptyp = 1U;
+	}
+	/* find options in the test script */
+	find_opt(ctx, bp, bz);
+
 	for (; find_tst(tst, bp, bz) == 0; bp = tst->rest.d, bz = tst->rest.z) {
-		if ((rc = run_tst(ctx, tst)) < 0) {
+		if (ctx->verbosep) {
+			fwrite(tst->cmd.d, sizeof(char), tst->cmd.z, stderr);
+		}
+		if ((rc = run_tst(ctx, tst))) {
+			if (ctx->verbosep) {
+				fprintf(stderr, "$? %d\n", rc);
+			}
 			break;
 		}
 	}
-	with (int fin_rc) {
-		if ((fin_rc = fini_chld(ctx))) {
-			rc = fin_rc;
-		}
+	if (UNLIKELY(fini_chld(ctx)) < 0) {
+		rc = -1;
 	}
 	return rc;
 }
@@ -523,6 +679,12 @@ main(int argc, char *argv[])
 	}
 	if (argi->husk_given) {
 		setenv("husk", argi->husk_arg, 1);
+	}
+	if (argi->verbose_given) {
+		verbosep = 1;
+	}
+	if (argi->pseudo_tty_given) {
+		ptyp = 1;
 	}
 
 	/* also bang builddir to path */
