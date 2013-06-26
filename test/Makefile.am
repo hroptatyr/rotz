@@ -32,6 +32,15 @@ TESTS += del_01.tst
 TESTS += del_02.tst
 TESTS += del_03.tst
 
+TESTS += show_01.tst
+TESTS += show_02.tst
+TESTS += show_03.tst
+TESTS += show_04.tst
+TESTS += show_05.tst
+TESTS += show_06.tst
+TESTS += show_07.tst
+TESTS += show_08.tst
+
 ## tests will generate a rotz.tcb file
 CLEANFILES += rotz.tcb
 
