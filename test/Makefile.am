@@ -31,6 +31,7 @@ TESTS += add_03.tst
 TESTS += del_01.tst
 TESTS += del_02.tst
 TESTS += del_03.tst
+TESTS += del_04.tst
 
 TESTS += show_01.tst
 TESTS += show_02.tst
