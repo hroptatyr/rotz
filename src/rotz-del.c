@@ -137,8 +137,8 @@ del_sym(rotz_t ctx, const char *sym)
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-del-clo.h"
-#include "rotz-del-clo.c"
+#include "rotz-del.h"
+#include "rotz-del.x"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */

@@ -153,8 +153,8 @@ show_tagsym_pair(rotz_t ctx, rtz_vtx_t tsid, const char *pair)
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-show-clo.h"
-#include "rotz-show-clo.c"
+#include "rotz-show.h"
+#include "rotz-show.x"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */

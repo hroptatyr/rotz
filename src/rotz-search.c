@@ -86,8 +86,8 @@ iter(rotz_t ctx, const struct iter_clo_s *clo)
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-search-clo.h"
-#include "rotz-search-clo.c"
+#include "rotz-search.h"
+#include "rotz-search.x"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */

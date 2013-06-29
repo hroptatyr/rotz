@@ -95,8 +95,8 @@ iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-alias-clo.h"
-#include "rotz-alias-clo.c"
+#include "rotz-alias.h"
+#include "rotz-alias.x"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */

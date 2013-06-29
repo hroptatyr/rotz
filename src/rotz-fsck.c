@@ -130,8 +130,8 @@ opti(rotz_t ctx)
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-fsck-clo.h"
-#include "rotz-fsck-clo.c"
+#include "rotz-fsck.h"
+#include "rotz-fsck.x"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */

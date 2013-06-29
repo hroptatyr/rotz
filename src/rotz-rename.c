@@ -77,8 +77,8 @@ couldn't rename tags, target tag exists\n", stderr);
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-rename-clo.h"
-#include "rotz-rename-clo.c"
+#include "rotz-rename.h"
+#include "rotz-rename.x"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */
