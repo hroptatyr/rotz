@@ -179,8 +179,8 @@ graph [\n\
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-export-clo.h"
-#include "rotz-export-clo.c"
+#include "rotz-export.h"
+#include "rotz-export.x"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */
