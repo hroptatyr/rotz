@@ -43,7 +43,7 @@ EXTRA_DIST += rotz-show.xmpl
 VPATH += $(top_srcdir)/src
 
 ## help2man helpers
-%.man: %-clo.ggo $(top_srcdir)/configure $(top_builddir)/version.mk
+%.man: %.ggo $(top_srcdir)/configure $(top_builddir)/version.mk
 	$(AM_V_GEN) $(HELP2MAN) -S "$(PACKAGE_STRING)" -p "($(PACKAGE))$*" \
 		-I "$(srcdir)/author.h2m" \
 		-i "$(srcdir)/$*.name" \
