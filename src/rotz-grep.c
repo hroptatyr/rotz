@@ -82,6 +82,9 @@ handle_one(rotz_t ctx, const char *input)
 
 	/* found and we're in match mode? */
 	if (LIKELY(!argi->invert_match_given)) {
+		if (UNLIKELY(argi->normalise_given)) {
+			input = rotz_massage_name(rotz_get_name(ctx, tsid));
+		}
 	disp:
 		puts(input);
 	}
