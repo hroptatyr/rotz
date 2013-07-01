@@ -40,6 +40,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdarg.h>
+#include <errno.h>
 #include "nifty.h"
 
 #define RTZ_TAGSPC	"tag"
@@ -113,6 +115,25 @@ rotz_massage_name(const char *ts)
 		ts += RTZ_PRE_Z;
 	}
 	return ts;
+}
+
+
+static inline __attribute__((format(printf, 1, 2))) void
+error(const char *fmt, ...)
+{
+	va_list vap;
+
+	va_start(vap, fmt);
+	vfprintf(stderr, fmt, vap);
+	va_end(vap);
+
+	if (errno) {
+		fputc(':', stderr);
+		fputc(' ', stderr);
+		fputs(strerror(errno), stderr);
+	}
+	fputc('\n', stderr);
+	return;
 }
 
 #endif	/* INCLUDED_rotz_cmd_api_h_ */
