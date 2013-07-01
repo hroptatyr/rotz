@@ -138,6 +138,16 @@ rotz_fsck_LDADD = librotz.la
 rotz_fsck_LDADD += libraux.la
 BUILT_SOURCES += rotz-fsck.x rotz-fsck.h
 
+bin_PROGRAMS += rotz-grep
+rotz_grep_SOURCES = rotz-grep.c
+rotz_grep_SOURCES += rotz-cmd-api.h
+rotz_grep_SOURCES += rotz-grep.ggo
+rotz_grep_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
+rotz_grep_LDFLAGS = $(AM_LDFLAGS)
+rotz_grep_LDADD = librotz.la
+rotz_grep_LDADD += libraux.la
+BUILT_SOURCES += rotz-grep.x rotz-grep.h
+
 if USE_LMDB
 noinst_PROGRAMS += rotz-dump
 rotz_dump_SOURCES = rotz-dump.c
