@@ -1,4 +1,4 @@
-/*** rotz-fsck.c -- rotz tag fsck'er
+/*** rotz-grep.c -- rotz tag grepper
  *
  * Copyright (C) 2013 Sebastian Freundt
  *
@@ -37,111 +37,65 @@
 #if defined HAVE_CONFIG_H
 # include "config.h"
 #endif	/* HAVE_CONFIG_H */
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
-#include <fcntl.h>
-#if defined USE_TCBDB
-# include <tcbdb.h>
-#endif	/* USE_TCBDB */
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
+#include "raux.h"
 #include "nifty.h"
-
-
-#if defined USE_LMDB
-static void
-dberror(rotz_t UNUSED(ctx), const char *premsg)
-{
-	fputs(premsg, stderr);
-	fputc('\n', stderr);
-	return;
-}
-
-static int
-dfrg(rotz_t UNUSED(ctx))
-{
-	return 0;
-}
-
-static int
-opti(rotz_t UNUSED(ctx))
-{
-	return 0;
-}
-#elif defined USE_TCBDB
-struct rotz_s {
-	TCBDB *db;
-};
-
-static void
-dberror(rotz_t ctx, const char *premsg)
-{
-	int ecode = tcbdbecode(ctx->db);
-
-	fputs(premsg, stderr);
-	fputs(tcbdberrmsg(ecode), stderr);
-	fputc('\n', stderr);
-	return;
-}
-
-static int
-dfrg(rotz_t ctx)
-{
-	if (!tcbdbdefrag(ctx->db, INT64_MAX)) {
-		return -1;
-	}
-	return 0;
-}
-
-static int
-opti(rotz_t ctx)
-{
-	/* values are taken from tcbmgr.c */
-	static struct {
-		int lmemb;
-		int nmemb;
-		int bnum;
-		int8_t apow;
-		int8_t fpow;
-		uint8_t opts;
-	} opt = {
-		.lmemb = -1,
-		.nmemb = -1,
-		.bnum = -1,
-		.apow = -1,
-		.fpow = -1,
-		.opts = UINT8_MAX,
-	};
-
-	if (!tcbdboptimize(
-		ctx->db,
-		opt.lmemb, opt.nmemb, opt.bnum, opt.apow, opt.fpow, opt.opts)) {
-		return -1;
-	}
-	return 0;
-}
-#endif	/* USE_TCBDB */
 
 
 #if defined STANDALONE
 #if defined __INTEL_COMPILER
 # pragma warning (disable:593)
 #endif	/* __INTEL_COMPILER */
-#include "rotz-fsck.h"
-#include "rotz-fsck.x"
+#include "rotz-grep.h"
+#include "rotz-grep.x"
 #if defined __INTEL_COMPILER
 # pragma warning (default:593)
 #endif	/* __INTEL_COMPILER */
 
+static struct rotz_args_info argi[1];
+
+static void
+handle_one(rotz_t ctx, const char *input)
+{
+	const char *tagsym;
+	rtz_vtx_t tsid;
+
+	if ((tagsym = rotz_tag(input),
+	     tsid = rotz_get_vertex(ctx, tagsym))) {
+		;
+	} else if ((tagsym = rotz_sym(input),
+		    tsid = rotz_get_vertex(ctx, tagsym))) {
+		;
+	} else if (argi->invert_match_given) {
+		/* not found but we're in invert-match mode */
+		goto disp;
+	} else {
+		return;
+	}
+
+	/* found and we're in match mode? */
+	if (LIKELY(!argi->invert_match_given)) {
+		if (UNLIKELY(argi->normalise_given)) {
+			input = rotz_massage_name(rotz_get_name(ctx, tsid));
+		}
+	disp:
+		puts(input);
+	}
+	return;
+}
+
 int
 main(int argc, char *argv[])
 {
-	struct rotz_args_info argi[1];
-	const char *db = RTZ_DFLT_DB;
 	rotz_t ctx;
+	const char *db = RTZ_DFLT_DB;
 	int res = 0;
 
 	if (rotz_parser(argc, argv, argi)) {
@@ -152,17 +106,28 @@ main(int argc, char *argv[])
 	if (argi->database_given) {
 		db = argi->database_arg;
 	}
-	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
-		fputs("Error opening rotz datastore\n", stderr);
+	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
+		error("Error opening rotz datastore");
 		res = 1;
 		goto out;
 	}
 
-	/* first step is to defrag, ... */
-	if (UNLIKELY(dfrg(ctx) < 0)) {
-		dberror(ctx, "Error during defrag: ");
-	} else if (UNLIKELY(opti(ctx) < 0)) {
-		dberror(ctx, "Error during optimisation: ");
+	for (unsigned int i = 0; i < argi->inputs_num; i++) {
+		const char *const input = argi->inputs[i];
+
+		handle_one(ctx, input);
+	}
+	if (argi->inputs_num == 0 && !isatty(STDIN_FILENO)) {
+		/* read the guys from STDIN */
+		char *line = NULL;
+		size_t llen = 0U;
+		ssize_t nrd;
+
+		while ((nrd = getline(&line, &llen, stdin)) > 0) {
+			line[nrd - 1] = '\0';
+			handle_one(ctx, line);
+		}
+		free(line);
 	}
 
 	/* big resource freeing */
@@ -173,4 +138,4 @@ out:
 }
 #endif	/* STANDALONE */
 
-/* rotz-fsck.c ends here */
+/* rotz-grep.c ends here */

@@ -25,6 +25,7 @@ built_mans += rotz-search.man
 built_mans += rotz-rename.man
 built_mans += rotz-cloud.man
 built_mans += rotz-fsck.man
+built_mans += rotz-grep.man
 
 EXTRA_DIST += rotz-add.name
 EXTRA_DIST += rotz-del.name
@@ -35,6 +36,7 @@ EXTRA_DIST += rotz-search.name
 EXTRA_DIST += rotz-rename.name
 EXTRA_DIST += rotz-cloud.name
 EXTRA_DIST += rotz-fsck.name
+EXTRA_DIST += rotz-grep.name
 
 EXTRA_DIST += rotz-add.xmpl
 EXTRA_DIST += rotz-del.xmpl
@@ -43,7 +45,7 @@ EXTRA_DIST += rotz-show.xmpl
 VPATH += $(top_srcdir)/src
 
 ## help2man helpers
-%.man: %-clo.ggo $(top_srcdir)/configure $(top_builddir)/version.mk
+%.man: %.ggo $(top_srcdir)/configure $(top_builddir)/version.mk
 	$(AM_V_GEN) $(HELP2MAN) -S "$(PACKAGE_STRING)" -p "($(PACKAGE))$*" \
 		-I "$(srcdir)/author.h2m" \
 		-i "$(srcdir)/$*.name" \

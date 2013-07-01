@@ -1,0 +1,19 @@
+args "--unamed-opts --no-handle-error --long-help -a rotz_args_info -f rotz_parser"
+package "rotz-grep"
+usage "rotz-grep [OPTIONS...] [TAG|SYM].."
+description "Echo TAG or SYM if present in the database.
+
+If TAG|RSYM is omitted read a list of tags or syms from stdin."
+
+option "database" -
+	"Tagging service file or host, default: `rotz.tcb'"
+	string typestr="FILE|HOST" optional
+
+option "invert-match" v
+	"Display tags or symbols not present in the database."
+	optional
+
+option "normalise" -
+	"Instead of displaying a match with the given tag or sym display \
+its normalised alias (does not work for inverted matches)."
+	optional
