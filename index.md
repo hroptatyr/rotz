@@ -1,6 +1,6 @@
 ---
 title: rotz
-layout: page
+layout: default
 ---
 
 rotz
