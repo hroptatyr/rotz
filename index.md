@@ -1,7 +1,7 @@
 ---
 title: rotz
 project: rotz
-layout: default
+layout: project
 latest: rotz-0.1.4.tar.xz
 ---
 
