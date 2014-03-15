@@ -1,0 +1,5 @@
+Usage: rotz-rename OLDNAME NEWNAME
+
+Rename tag (or symbol) from OLDNAME to NEWNAME.
+
+  --database=FILE   Use tagging database FILE, default `rotz.tcb'

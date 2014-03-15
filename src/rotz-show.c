@@ -150,16 +150,9 @@ show_tagsym_pair(rotz_t ctx, rtz_vtx_t tsid, const char *pair)
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-show.h"
-#include "rotz-show.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
+#include "rotz-show.yucc"
 
-static struct rotz_args_info argi[1];
+static yuck_t argi[1U];
 static union {
 	rtz_vtxlst_t vl;
 	rtz_wtxlst_t wl;
@@ -183,17 +176,17 @@ handle_one(rotz_t ctx, const char *input)
 		return;
 	}
 
-	if (argi->union_given) {
+	if (argi->union_flag) {
 		r.vl = rotz_union(ctx, r.vl, tsid);
-	} else if (argi->munion_given) {
+	} else if (argi->munion_flag) {
 		r.wl = rotz_munion(ctx, r.wl, tsid);
-	} else if (argi->intersection_given) {
+	} else if (argi->intersection_flag) {
 		if (i++ > 0) {
 			r.vl = rotz_intersection(ctx, r.vl, tsid);
 		} else {
 			r.vl = rotz_get_edges(ctx, tsid);
 		}
-	} else if (argi->pairs_given) {
+	} else if (argi->pairs_flag) {
 		show_tagsym_pair(ctx, tsid, input);
 	} else {
 		show_tagsym(ctx, tsid);
@@ -206,28 +199,28 @@ main(int argc, char *argv[])
 {
 	rotz_t ctx;
 	const char *db = RTZ_DFLT_DB;
-	int res = 0;
+	int rc = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
-		res = 1;
+	if (yuck_parse(argi, argc, argv)) {
+		rc = 1;
 		goto out;
 	}
 
-	if (argi->database_given) {
+	if (argi->database_arg) {
 		db = argi->database_arg;
 	}
 	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
-		res = 1;
+		rc = 1;
 		goto out;
 	}
 
-	for (unsigned int i = 0; i < argi->inputs_num; i++) {
-		const char *const input = argi->inputs[i];
+	for (size_t i = 0U; i < argi->nargs; i++) {
+		const char *const input = argi->args[i];
 
 		handle_one(ctx, input);
 	}
-	if (argi->inputs_num == 0 && !isatty(STDIN_FILENO)) {
+	if (argi->nargs == 0U && !isatty(STDIN_FILENO)) {
 		/* read the guys from STDIN */
 		char *line = NULL;
 		size_t llen = 0U;
@@ -238,29 +231,29 @@ main(int argc, char *argv[])
 			handle_one(ctx, line);
 		}
 		free(line);
-	} else if (argi->inputs_num == 0 && argi->syms_given) {
+	} else if (argi->nargs == 0U && argi->syms_flag) {
 		/* show all syms mode */
 		rotz_vtx_iter(ctx, iter_syms_cb, NULL);
 		goto fina;
-	} else if (argi->inputs_num == 0) {
+	} else if (argi->nargs == 0U) {
 		/* show all tags mode */
 		rotz_vtx_iter(ctx, iter_cb, NULL);
 		goto fina;
 	}
-	if (argi->union_given || argi->intersection_given) {
+	if (argi->union_flag || argi->intersection_flag) {
 		prnt_vtxlst(ctx, r.vl);
-	} else if (argi->munion_given) {
+	} else if (argi->munion_flag) {
 		/* quick service, sort r.wl, could be an option */
 		sort_wtxlst(r.wl);
 		prnt_wtxlst(ctx, r.wl);
 	}
 
 fina:
-	/* big resource freeing */
+	/* big rcource freeing */
 	free_rotz(ctx);
 out:
-	rotz_parser_free(argi);
-	return res;
+	yuck_free(argi);
+	return rc;
 }
 #endif	/* STANDALONE */
 

@@ -1,0 +1,10 @@
+Usage: rotz add [TAG [SYM]...]
+
+Add TAG to rolf symbol(s) SYM.
+
+If SYM is omitted on the command line read symbols from stdin.
+If both TAG and SYM are omitted, read tag sym pairs (separated by a
+tab character) from stdin.
+
+  -v, --verbose     Be verbose about the additions made.
+  --database=FILE   Use tagging database FILE, default `rotz.tcb'

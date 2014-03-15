@@ -1,0 +1,6 @@
+Usage: rotz-search SEARCH_STRING
+
+Show all tags that start with SEARCH_STRING.
+
+  --database=FILE   Use tagging database FILE, default `rotz.tcb'
+  --top=N           Only display the top N tags.

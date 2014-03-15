@@ -1,0 +1,5 @@
+Usage: rotz-update
+
+Update old database files to new policies.
+
+  --database=FILE   Use tagging database FILE, default `rotz.tcb'

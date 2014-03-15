@@ -50,16 +50,9 @@
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-grep.h"
-#include "rotz-grep.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
+#include "rotz-grep.yucc"
 
-static struct rotz_args_info argi[1];
+static yuck_t argi[1U];
 
 static void
 handle_one(rotz_t ctx, const char *input)
@@ -73,7 +66,7 @@ handle_one(rotz_t ctx, const char *input)
 	} else if ((tagsym = rotz_sym(input),
 		    tsid = rotz_get_vertex(ctx, tagsym))) {
 		;
-	} else if (argi->invert_match_given) {
+	} else if (argi->invert_match_flag) {
 		/* not found but we're in invert-match mode */
 		goto disp;
 	} else {
@@ -81,8 +74,8 @@ handle_one(rotz_t ctx, const char *input)
 	}
 
 	/* found and we're in match mode? */
-	if (LIKELY(!argi->invert_match_given)) {
-		if (UNLIKELY(argi->normalise_given)) {
+	if (LIKELY(!argi->invert_match_flag)) {
+		if (UNLIKELY(argi->normalise_flag)) {
 			input = rotz_massage_name(rotz_get_name(ctx, tsid));
 		}
 	disp:
@@ -96,28 +89,28 @@ main(int argc, char *argv[])
 {
 	rotz_t ctx;
 	const char *db = RTZ_DFLT_DB;
-	int res = 0;
+	int rc = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
-		res = 1;
+	if (yuck_parse(argi, argc, argv)) {
+		rc = 1;
 		goto out;
 	}
 
-	if (argi->database_given) {
+	if (argi->database_arg) {
 		db = argi->database_arg;
 	}
 	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
 		error("Error opening rotz datastore");
-		res = 1;
+		rc = 1;
 		goto out;
 	}
 
-	for (unsigned int i = 0; i < argi->inputs_num; i++) {
-		const char *const input = argi->inputs[i];
+	for (size_t i = 0U; i < argi->nargs; i++) {
+		const char *const input = argi->args[i];
 
 		handle_one(ctx, input);
 	}
-	if (argi->inputs_num == 0 && !isatty(STDIN_FILENO)) {
+	if (argi->nargs == 0U && !isatty(STDIN_FILENO)) {
 		/* read the guys from STDIN */
 		char *line = NULL;
 		size_t llen = 0U;
@@ -130,11 +123,11 @@ main(int argc, char *argv[])
 		free(line);
 	}
 
-	/* big resource freeing */
+	/* big rcource freeing */
 	free_rotz(ctx);
 out:
-	rotz_parser_free(argi);
-	return res;
+	yuck_free(argi);
+	return rc;
 }
 #endif	/* STANDALONE */
 

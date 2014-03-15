@@ -1,0 +1,7 @@
+Usage: rotz-cloud
+
+Show all tags along with a count.
+
+  --database=FILE   Use tagging database FILE, default `rotz.tcb'
+  --top=N           Only display the top N tags.
+  --pivot=TAG|SYM   Display tags/syms that intersect with TAG|SYM

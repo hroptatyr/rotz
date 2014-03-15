@@ -127,34 +127,27 @@ opti(rotz_t ctx)
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-fsck.h"
-#include "rotz-fsck.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
+#include "rotz-fsck.yucc"
 
 int
 main(int argc, char *argv[])
 {
-	struct rotz_args_info argi[1];
+	yuck_t argi[1U];
 	const char *db = RTZ_DFLT_DB;
 	rotz_t ctx;
-	int res = 0;
+	int rc = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
-		res = 1;
+	if (yuck_parse(argi, argc, argv)) {
+		rc = 1;
 		goto out;
 	}
 
-	if (argi->database_given) {
+	if (argi->database_arg) {
 		db = argi->database_arg;
 	}
 	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
-		res = 1;
+		rc = 1;
 		goto out;
 	}
 
@@ -165,11 +158,11 @@ main(int argc, char *argv[])
 		dberror(ctx, "Error during optimisation: ");
 	}
 
-	/* big resource freeing */
+	/* big rcource freeing */
 	free_rotz(ctx);
 out:
-	rotz_parser_free(argi);
-	return res;
+	yuck_free(argi);
+	return rc;
 }
 #endif	/* STANDALONE */
 
