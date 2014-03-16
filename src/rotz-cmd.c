@@ -1,6 +1,6 @@
-/*** rotz-alias.c -- rotz tag aliaser
+/*** rotz-cmd.c -- rotz umbrella tool
  *
- * Copyright (C) 2013-2014 Sebastian Freundt
+ * Copyright (C) 2013 Sebastian Freundt
  *
  * Author:  Sebastian Freundt <freundt@ga-group.nl>
  *
@@ -46,105 +46,129 @@
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
-#include "rotz-umb.h"
 #include "nifty.h"
 
 
-static void
-alias_tag(rotz_t ctx, rtz_vtx_t tid, const char *alias)
-{
-	const char *rtag;
+static int verbosep;
+#define _		rotz_massage_name
 
-	if (UNLIKELY((rtag = rotz_tag(alias)) == NULL)) {
+static void
+add_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
+{
+	const char *symspc_sym;
+	rtz_vtx_t sid;
+
+	if (UNLIKELY((symspc_sym = rotz_sym(sym)) == NULL)) {
+		return;
+	} else if (UNLIKELY((sid = rotz_add_vertex(ctx, symspc_sym)) == 0U)) {
 		return;
 	}
-	(void)rotz_add_alias(ctx, tid, rtag);
+	rotz_add_edge(ctx, tid, sid);
+	rotz_add_edge(ctx, sid, tid);
+
+	if (UNLIKELY(verbosep)) {
+		fputc('+', stdout);
+		fputs(_(rotz_get_name(ctx, tid)), stdout);
+		fputc('\t', stdout);
+		fputs(_(rotz_get_name(ctx, sid)), stdout);
+		fputc('\n', stdout);
+	}
 	return;
 }
 
 static void
-aliases(rotz_t ctx, rtz_vtx_t tid, char sep)
+add_tagsym(rotz_t ctx, const char *tag, const char *sym)
 {
-	rtz_buf_t al;
+	rtz_vtx_t tid;
 
-	al = rotz_get_aliases(ctx, tid);
-	for (const char *p = al.d, *const ep = al.d + al.z; p < ep;
-	     p += strlen(p) + 1/*for \nul*/) {
-		if (LIKELY(p > al.d)) {
-			fputc(sep, stdout);
-		}
-		fputs(rotz_massage_name(p), stdout);
+	tag = rotz_tag(tag);
+	if (UNLIKELY((tid = rotz_add_vertex(ctx, tag)) == 0U)) {
+		return;
 	}
-	rotz_free_r(al);
-	fputc('\n', stdout);
+	add_tag(ctx, tid, sym);
 	return;
-}
-
-static int
-iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
-{
-	if (memcmp(vtx, RTZ_SYMSPC, sizeof(RTZ_SYMSPC) - 1) == 0) {
-		/* that's a symbol, symbol can't have aliases, bugger off */
-		return 0;
-	}
-	aliases(clo, vid, '\t');
-	return 0;
 }
 
 
 #if defined STANDALONE
+#include "rotz-add.yucc"
+
 int
-rotz_cmd_alias(const struct yuck_cmd_alias_s argi[static 1U])
+main(int argc, char *argv[])
 {
+	yuck_t argi[1U];
 	rotz_t ctx;
+	const char *db = RTZ_DFLT_DB;
 	const char *tag;
 	rtz_vtx_t tid;
+	int rc = 0;
+
+	if (yuck_parse(argi, argc, argv)) {
+		rc = 1;
+		goto out;
+	}
+
+	if (argi->database_arg) {
+		db = argi->database_arg;
+	}
+	if (argi->verbose_flag) {
+		verbosep = 1;
+	}
 
 	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
-		return 1;
+		rc = 1;
+		goto out;
 	}
+	if (argi->nargs == 0U && !isatty(STDIN_FILENO)) {
+		/* tag \t sym mode, both from stdin */
+		char *line = NULL;
+		size_t llen = 0U;
+		ssize_t nrd;
 
-	if (argi->nargs > 0U) {
-		tag = rotz_tag(argi->args[0U]);
-		if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
-			goto fini;
-		}
-		if (argi->nargs > 1U && !argi->delete_flag) {
-			for (size_t i = 1U; i < argi->nargs; i++) {
-				alias_tag(ctx, tid, argi->args[i]);
-			}
-		} else if (argi->delete_flag) {
-			/* del tag */
-			rotz_rem_alias(ctx, tag);
-			for (size_t i = 1U; i < argi->nargs; i++) {
-				rotz_rem_alias(ctx, rotz_tag(argi->args[i]));
-			}
-		} else if (isatty(STDIN_FILENO)) {
-			/* report aliases for TAG */
-			aliases(ctx, tid, '\n');
-		} else {
-			/* alias tags from stdin */
-			char *line = NULL;
-			size_t llen = 0U;
-			ssize_t nrd;
+		while ((nrd = getline(&line, &llen, stdin)) > 0) {
+			const char *sym;
 
-			while ((nrd = getline(&line, &llen, stdin)) > 0) {
-				line[nrd - 1] = '\0';
-				alias_tag(ctx, tid, line);
+			line[nrd - 1] = '\0';
+			tag = line;
+			if (UNLIKELY((sym = strchr(line, '\t')) == NULL)) {
+				continue;
 			}
-			free(line);
+			/* \t -> \0 */
+			line[sym++ - line] = '\0';
+			add_tagsym(ctx, tag, sym);
 		}
-	} else {
-		/* show all aliases mode */
-		rotz_vtx_iter(ctx, iter_cb, ctx);
+		free(line);
+		goto fini;
+	}
+	/* ... otherwise associate with TAG somehow */
+	tag = rotz_tag(argi->args[0U]);
+	if (UNLIKELY((tid = rotz_add_vertex(ctx, tag)) == 0U)) {
+		goto fini;
+	}
+	for (size_t i = 1U; i < argi->nargs; i++) {
+		add_tag(ctx, tid, argi->args[i]);
+	}
+	if (argi->nargs == 1U && !isatty(STDIN_FILENO)) {
+		/* add tags from stdin */
+		char *line = NULL;
+		size_t llen = 0U;
+		ssize_t nrd;
+
+		while ((nrd = getline(&line, &llen, stdin)) > 0) {
+			line[nrd - 1] = '\0';
+			add_tag(ctx, tid, line);
+		}
+		free(line);
 	}
 
 fini:
 	/* big rcource freeing */
 	free_rotz(ctx);
-	return 0;
+out:
+	yuck_free(argi);
+	return rc;
 }
 #endif	/* STANDALONE */
 
-/* rotz-alias.c ends here */
+/* rotz-add.c ends here */

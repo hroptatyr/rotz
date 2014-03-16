@@ -1,6 +1,6 @@
 ## -*- shell-script -*-
 
-$ rotz-add -v pg pic_03.jpeg pic_04.jpeg
+$ rotz add -v pg pic_03.jpeg pic_04.jpeg
 +pg	pic_03.jpeg
 +pg	pic_04.jpeg
 $

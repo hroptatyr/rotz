@@ -1,6 +1,6 @@
 /*** rotz-export.c -- rotz graph exporter
  *
- * Copyright (C) 2013 Sebastian Freundt
+ * Copyright (C) 2013-2014 Sebastian Freundt
  *
  * Author:  Sebastian Freundt <freundt@ga-group.nl>
  *
@@ -44,6 +44,7 @@
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
+#include "rotz-umb.h"
 #include "nifty.h"
 
 static int clusterp;
@@ -176,54 +177,31 @@ graph [\n\
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-export.h"
-#include "rotz-export.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
-
 int
-main(int argc, char *argv[])
+rotz_cmd_export(const struct yuck_cmd_export_s argi[static 1U])
 {
-	struct rotz_args_info argi[1];
 	rotz_t ctx;
-	const char *db = RTZ_DFLT_DB;
-	int res = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
-		res = 1;
-		goto out;
-	}
-
-	if (argi->database_given) {
-		db = argi->database_arg;
-	}
 	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
-		res = 1;
-		goto out;
+		return 1;
 	}
 
 	/* setting global opts */
-	clusterp = argi->cluster_given;
+	clusterp = argi->cluster_flag;
 
-	if (argi->gml_given) {
+	if (argi->gml_flag) {
 		xprt_gml(ctx);
-	} else if (argi->dot_given) {
+	} else if (argi->dot_flag) {
 		xprt_dot(ctx);
 	} else {
 		/* default file format is csv */
 		xprt_csv(ctx);
 	}
 
-	/* big resource freeing */
+	/* big rcource freeing */
 	free_rotz(ctx);
-out:
-	rotz_parser_free(argi);
-	return res;
+	return 0;
 }
 #endif	/* STANDALONE */
 

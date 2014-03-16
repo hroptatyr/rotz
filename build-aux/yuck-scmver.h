@@ -1,10 +1,10 @@
-/*** rotz-rename.c -- rotz tag renameer
+/*** yuck-version.h -- snarf versions off project cwds
  *
  * Copyright (C) 2013-2014 Sebastian Freundt
  *
  * Author:  Sebastian Freundt <freundt@ga-group.nl>
  *
- * This file is part of rotz.
+ * This file is part of yuck.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -34,69 +34,44 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ***/
-#if defined HAVE_CONFIG_H
-# include "config.h"
-#endif	/* HAVE_CONFIG_H */
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-#include <fcntl.h>
+#if !defined INCLUDED_yuck_version_h_
+#define INCLUDED_yuck_version_h_
 
-#include "rotz.h"
-#include "rotz-cmd-api.h"
-#include "rotz-umb.h"
-#include "nifty.h"
+typedef const struct yuck_version_s *yuck_version_t;
 
-
-static void
-rename_tag(rotz_t ctx, const char *old, const char *new)
-{
-/* we rename by adding an alias NEW and then removing the alias OLD */
-	const char *tag;
-	rtz_vtx_t tid;
+typedef enum {
+	YUCK_SCM_ERROR = -1,
+	YUCK_SCM_TARBALL,
+	YUCK_SCM_GIT,
+	YUCK_SCM_BZR,
+	YUCK_SCM_HG,
+} yuck_scm_t;
 
-	if (UNLIKELY((tag = rotz_tag(old)) == NULL)) {
-		return;
-	} else if (UNLIKELY(!(tid = rotz_get_vertex(ctx, tag)))) {
-		return;
-	} else if (UNLIKELY((tag = rotz_tag(new)) == NULL)) {
-		return;
-	} else if (UNLIKELY(rotz_add_alias(ctx, tid, tag) < 0)) {
-		fputs("\
-couldn't rename tags, target tag exists\n", stderr);
-		return;
-	}
-	/* delete the old `alias' */
-	rotz_rem_alias(ctx, rotz_tag(old));
-	return;
-}
+struct yuck_version_s {
+	yuck_scm_t scm;
+	unsigned int dirty:1U;
+	char vtag[16U];
+	unsigned int dist;
+	unsigned int rvsn;
+};
 
 
-#if defined STANDALONE
-int
-rotz_cmd_rename(const struct yuck_cmd_rename_s argi[static 1U])
-{
-	rotz_t ctx;
+/* public api */
+/**
+ * Determine SCM version of file(s) in PATH. */
+extern int yuck_version(struct yuck_version_s *restrict v, const char *path);
 
-	if (argi->nargs != 2) {
-		fputs("Error: need OLDNAME and NEWNAME\n\n", stderr);
-		yuck_auto_help((const yuck_t*)argi);
-		return 1;
-	}
+/**
+ * Read a reference file FN and return scm version information. */
+extern int yuck_version_read(struct yuck_version_s *restrict, const char *fn);
 
-	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
-		fputs("Error opening rotz datastore\n", stderr);
-		return 1;
-	}
+/**
+ * Write scm version information in V to reference file FN. */
+extern int yuck_version_write(const char *fn, const struct yuck_version_s *v);
 
-	rename_tag(ctx, argi->args[0U], argi->args[1U]);
+/**
+ * Compare two version objects, return <0 if V1 < V2, >0 if V1 > V2 and
+ * 0 if V1 and V2 are considered equal. */
+extern int yuck_version_cmp(yuck_version_t v1, yuck_version_t v2);
 
-	/* big rcource freeing */
-	free_rotz(ctx);
-	return 0;
-}
-#endif	/* STANDALONE */
-
-/* rotz-rename.c ends here */
+#endif	/* INCLUDED_yuck_version_h_ */

@@ -1,7 +1,7 @@
 ## -*- shell-script -*-
 
 ## expects the graph from show_02.tst
-$ rotz-show --intersection p2 p3
+$ rotz show --intersection p2 p3
 b3
 $
 

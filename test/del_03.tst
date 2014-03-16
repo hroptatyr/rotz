@@ -1,7 +1,7 @@
 ## -*- shell-script -*-
 
-$ rotz-add pg pic_03.jpeg pic_04.jpeg
-$ rotz-del -v <<EOF
+$ rotz add pg pic_03.jpeg pic_04.jpeg
+$ rotz del -v <<EOF
 pg
 EOF
 -pg	pic_03.jpeg

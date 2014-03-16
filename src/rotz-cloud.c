@@ -1,6 +1,6 @@
 /*** rotz-cloud.c -- rotz tag cloud'er
  *
- * Copyright (C) 2013 Sebastian Freundt
+ * Copyright (C) 2013-2014 Sebastian Freundt
  *
  * Author:  Sebastian Freundt <freundt@ga-group.nl>
  *
@@ -44,6 +44,7 @@
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
+#include "rotz-umb.h"
 #include "raux.h"
 #include "nifty.h"
 
@@ -156,62 +157,39 @@ pivot(const char *what)
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-cloud.h"
-#include "rotz-cloud.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
-
 int
-main(int argc, char *argv[])
+rotz_cmd_cloud(const struct yuck_cmd_cloud_s argi[static 1U])
 {
 	static struct iter_clo_s clo[1];
-	struct rotz_args_info argi[1];
-	const char *db = RTZ_DFLT_DB;
-	int res = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
-		res = 1;
-		goto out;
-	}
-
-	if (argi->database_given) {
-		db = argi->database_arg;
-	}
 	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
-		res = 1;
-		goto out;
+		return 1;
 	}
 
 	/* cloud all tags mode, undocumented prefix feature */
-	if (argi->inputs_num) {
-		clo->pre.z = strlen(argi->inputs[0]);
-		clo->pre.d = argi->inputs[0];
+	if (argi->nargs) {
+		clo->pre.z = strlen(argi->args[0U]);
+		clo->pre.d = argi->args[0U];
 	}
-	if (argi->top_given) {
-		clo->wl.z = argi->top_arg;
+	if (argi->top_arg) {
+		clo->wl.z = strtoul(argi->top_arg, NULL, 0);
 		clo->wl.d = calloc(clo->wl.z, sizeof(*clo->wl.d));
 		clo->wl.w = calloc(clo->wl.z, sizeof(*clo->wl.w));
 	}
-	if (argi->pivot_given) {
+	if (argi->pivot_arg) {
 		pivot(argi->pivot_arg);
 	} else {
 		rotz_vtx_iter(ctx, iter_cb, clo);
 	}
-	if (argi->top_given) {
+	if (argi->top_arg) {
 		prnt_top(clo);
 		rotz_free_wtxlst(clo->wl);
 	}
 
-	/* big resource freeing */
+	/* big rcource freeing */
 	free_rotz(ctx);
-out:
-	rotz_parser_free(argi);
-	return res;
+	return 0;
 }
 #endif	/* STANDALONE */
 

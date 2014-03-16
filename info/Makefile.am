@@ -14,41 +14,27 @@ man1_MANS += $(built_mans)
 
 EXTRA_DIST += author.h2m
 BUILT_SOURCES += $(built_mans) $(built_infos)
+SUFFIXES =
 
 built_mans =
-built_mans += rotz-add.man
-built_mans += rotz-del.man
-built_mans += rotz-show.man
-built_mans += rotz-alias.man
-built_mans += rotz-combine.man
-built_mans += rotz-search.man
-built_mans += rotz-rename.man
-built_mans += rotz-cloud.man
-built_mans += rotz-fsck.man
-built_mans += rotz-grep.man
-
-EXTRA_DIST += rotz-add.name
-EXTRA_DIST += rotz-del.name
-EXTRA_DIST += rotz-show.name
-EXTRA_DIST += rotz-alias.name
-EXTRA_DIST += rotz-combine.name
-EXTRA_DIST += rotz-search.name
-EXTRA_DIST += rotz-rename.name
-EXTRA_DIST += rotz-cloud.name
-EXTRA_DIST += rotz-fsck.name
-EXTRA_DIST += rotz-grep.name
+built_mans += rotz.man
 
 EXTRA_DIST += rotz-add.xmpl
 EXTRA_DIST += rotz-del.xmpl
 EXTRA_DIST += rotz-show.xmpl
 
-VPATH += $(top_srcdir)/src
+VPATH += @top_srcdir@/src
 
 ## help2man helpers
-%.man: %.ggo $(top_srcdir)/configure $(top_builddir)/version.mk
-	$(AM_V_GEN) $(HELP2MAN) -S "$(PACKAGE_STRING)" -p "($(PACKAGE))$*" \
-		-I "$(srcdir)/author.h2m" \
-		-i "$(srcdir)/$*.name" \
-		-I "$(srcdir)/$*.xmpl" \
-		-o $@ $(top_builddir)/src/$*
+SUFFIXES += .yuck
+SUFFIXES += .man
+.yuck.man:
+	$(AM_V_GEN) PATH="$(top_builddir)/build-aux:$${PATH}" \
+		yuck$(EXEEXT) genman \
+			--package "$(PACKAGE_NAME)" \
+			-i "$(srcdir)/rotz-add.xmpl" \
+			-i "$(srcdir)/rotz-del.xmpl" \
+			-i "$(srcdir)/rotz-show.xmpl" \
+			-i "$(srcdir)/author.h2m" \
+			-o $@ --version-file "$(top_builddir)/.version" $<
 

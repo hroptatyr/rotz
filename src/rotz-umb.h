@@ -1,4 +1,4 @@
-/*** rotz-rename.c -- rotz tag renameer
+/*** rotz-umb.h -- rotz umbrella tool
  *
  * Copyright (C) 2013-2014 Sebastian Freundt
  *
@@ -34,69 +34,25 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ***/
-#if defined HAVE_CONFIG_H
-# include "config.h"
-#endif	/* HAVE_CONFIG_H */
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdio.h>
-#include <fcntl.h>
+#if !defined INCLUDED_rotz_umb_h_
+#define INCLUDED_rotz_umb_h_
 
-#include "rotz.h"
-#include "rotz-cmd-api.h"
-#include "rotz-umb.h"
-#include "nifty.h"
+#include "rotz.yuch"
+
+/* common arguments */
+extern const char *db;
 
 
-static void
-rename_tag(rotz_t ctx, const char *old, const char *new)
-{
-/* we rename by adding an alias NEW and then removing the alias OLD */
-	const char *tag;
-	rtz_vtx_t tid;
+extern int rotz_cmd_add(const struct yuck_cmd_add_s*);
+extern int rotz_cmd_alias(const struct yuck_cmd_alias_s*);
+extern int rotz_cmd_cloud(const struct yuck_cmd_cloud_s*);
+extern int rotz_cmd_combine(const struct yuck_cmd_combine_s*);
+extern int rotz_cmd_del(const struct yuck_cmd_del_s*);
+extern int rotz_cmd_export(const struct yuck_cmd_export_s*);
+extern int rotz_cmd_fsck(const struct yuck_cmd_fsck_s*);
+extern int rotz_cmd_grep(const struct yuck_cmd_grep_s*);
+extern int rotz_cmd_rename(const struct yuck_cmd_rename_s*);
+extern int rotz_cmd_search(const struct yuck_cmd_search_s*);
+extern int rotz_cmd_show(const struct yuck_cmd_show_s*);
 
-	if (UNLIKELY((tag = rotz_tag(old)) == NULL)) {
-		return;
-	} else if (UNLIKELY(!(tid = rotz_get_vertex(ctx, tag)))) {
-		return;
-	} else if (UNLIKELY((tag = rotz_tag(new)) == NULL)) {
-		return;
-	} else if (UNLIKELY(rotz_add_alias(ctx, tid, tag) < 0)) {
-		fputs("\
-couldn't rename tags, target tag exists\n", stderr);
-		return;
-	}
-	/* delete the old `alias' */
-	rotz_rem_alias(ctx, rotz_tag(old));
-	return;
-}
-
-
-#if defined STANDALONE
-int
-rotz_cmd_rename(const struct yuck_cmd_rename_s argi[static 1U])
-{
-	rotz_t ctx;
-
-	if (argi->nargs != 2) {
-		fputs("Error: need OLDNAME and NEWNAME\n\n", stderr);
-		yuck_auto_help((const yuck_t*)argi);
-		return 1;
-	}
-
-	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
-		fputs("Error opening rotz datastore\n", stderr);
-		return 1;
-	}
-
-	rename_tag(ctx, argi->args[0U], argi->args[1U]);
-
-	/* big rcource freeing */
-	free_rotz(ctx);
-	return 0;
-}
-#endif	/* STANDALONE */
-
-/* rotz-rename.c ends here */
+#endif	/* INCLUDED_rotz_umb_h_ */

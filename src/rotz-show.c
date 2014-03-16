@@ -1,6 +1,6 @@
 /*** rotz-show.c -- rotz tag show'er
  *
- * Copyright (C) 2013 Sebastian Freundt
+ * Copyright (C) 2013-2014 Sebastian Freundt
  *
  * Author:  Sebastian Freundt <freundt@ga-group.nl>
  *
@@ -45,6 +45,7 @@
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
+#include "rotz-umb.h"
 #include "raux.h"
 #include "nifty.h"
 
@@ -150,23 +151,13 @@ show_tagsym_pair(rotz_t ctx, rtz_vtx_t tsid, const char *pair)
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-show.h"
-#include "rotz-show.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
-
-static struct rotz_args_info argi[1];
 static union {
 	rtz_vtxlst_t vl;
 	rtz_wtxlst_t wl;
 } r = {0U};
 
 static void
-handle_one(rotz_t ctx, const char *input)
+handle_one(rotz_t ctx, const struct yuck_cmd_show_s *argi, const char *input)
 {
 	static size_t i;
 	const char *tagsym;
@@ -183,17 +174,17 @@ handle_one(rotz_t ctx, const char *input)
 		return;
 	}
 
-	if (argi->union_given) {
+	if (argi->union_flag) {
 		r.vl = rotz_union(ctx, r.vl, tsid);
-	} else if (argi->munion_given) {
+	} else if (argi->munion_flag) {
 		r.wl = rotz_munion(ctx, r.wl, tsid);
-	} else if (argi->intersection_given) {
+	} else if (argi->intersection_flag) {
 		if (i++ > 0) {
 			r.vl = rotz_intersection(ctx, r.vl, tsid);
 		} else {
 			r.vl = rotz_get_edges(ctx, tsid);
 		}
-	} else if (argi->pairs_given) {
+	} else if (argi->pairs_flag) {
 		show_tagsym_pair(ctx, tsid, input);
 	} else {
 		show_tagsym(ctx, tsid);
@@ -202,32 +193,21 @@ handle_one(rotz_t ctx, const char *input)
 }
 
 int
-main(int argc, char *argv[])
+rotz_cmd_show(const struct yuck_cmd_show_s argi[static 1U])
 {
 	rotz_t ctx;
-	const char *db = RTZ_DFLT_DB;
-	int res = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
-		res = 1;
-		goto out;
-	}
-
-	if (argi->database_given) {
-		db = argi->database_arg;
-	}
 	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
-		res = 1;
-		goto out;
+		return 1;
 	}
 
-	for (unsigned int i = 0; i < argi->inputs_num; i++) {
-		const char *const input = argi->inputs[i];
+	for (size_t i = 0U; i < argi->nargs; i++) {
+		const char *const input = argi->args[i];
 
-		handle_one(ctx, input);
+		handle_one(ctx, argi, input);
 	}
-	if (argi->inputs_num == 0 && !isatty(STDIN_FILENO)) {
+	if (argi->nargs == 0U && !isatty(STDIN_FILENO)) {
 		/* read the guys from STDIN */
 		char *line = NULL;
 		size_t llen = 0U;
@@ -235,32 +215,30 @@ main(int argc, char *argv[])
 
 		while ((nrd = getline(&line, &llen, stdin)) > 0) {
 			line[nrd - 1] = '\0';
-			handle_one(ctx, line);
+			handle_one(ctx, argi, line);
 		}
 		free(line);
-	} else if (argi->inputs_num == 0 && argi->syms_given) {
+	} else if (argi->nargs == 0U && argi->syms_flag) {
 		/* show all syms mode */
 		rotz_vtx_iter(ctx, iter_syms_cb, NULL);
 		goto fina;
-	} else if (argi->inputs_num == 0) {
+	} else if (argi->nargs == 0U) {
 		/* show all tags mode */
 		rotz_vtx_iter(ctx, iter_cb, NULL);
 		goto fina;
 	}
-	if (argi->union_given || argi->intersection_given) {
+	if (argi->union_flag || argi->intersection_flag) {
 		prnt_vtxlst(ctx, r.vl);
-	} else if (argi->munion_given) {
+	} else if (argi->munion_flag) {
 		/* quick service, sort r.wl, could be an option */
 		sort_wtxlst(r.wl);
 		prnt_wtxlst(ctx, r.wl);
 	}
 
 fina:
-	/* big resource freeing */
+	/* big rcource freeing */
 	free_rotz(ctx);
-out:
-	rotz_parser_free(argi);
-	return res;
+	return 0;
 }
 #endif	/* STANDALONE */
 
