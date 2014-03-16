@@ -16,7 +16,7 @@ version.mk: .version version.mk.in FORCE
 		$(MAKE) -C "$(top_builddir)/build-aux"; \
 		PATH="$(top_builddir)/build-aux:$${PATH}" \
 			yuck scmver --ignore-noscm -o $@ --reference $^; \
-		if test $$? -eq 3; then \
+		if test $$? -eq 3 -a -n "$(_dist-target_p)"; then \
 			exec $(MAKE) $(MAKECMDGOALS); \
 		fi; \
 	fi

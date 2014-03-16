@@ -129,7 +129,7 @@ opti(rotz_t ctx)
 
 #if defined STANDALONE
 int
-rotz_cmd_fsck(const struct yuck_cmd_fsck_s UNUSED(argi)[static 1U])
+rotz_cmd_fsck(const struct yuck_cmd_fsck_s UNUSED(argi[static 1U]))
 {
 	rotz_t ctx;
 
