@@ -48,7 +48,8 @@ endif  USE_LMDB
 
 ## the big rotz umbrella
 bin_PROGRAMS += rotz
-rotz_SOURCES = rotz-umb.c rotz-umb.yuck
+rotz_SOURCES = rotz-umb.c rotz-umb.h rotz-umb.yuck
+rotz_SOURCES += rotz-cmd-api.h
 rotz_SOURCES += rotz-add.c
 rotz_SOURCES += rotz-alias.c
 rotz_SOURCES += rotz-cloud.c
