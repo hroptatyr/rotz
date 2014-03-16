@@ -48,7 +48,7 @@ endif  USE_LMDB
 
 ## the big rotz umbrella
 bin_PROGRAMS += rotz
-rotz_SOURCES = rotz-umb.c rotz-umb.h rotz-umb.yuck
+rotz_SOURCES = rotz-umb.c rotz-umb.h rotz.yuck
 rotz_SOURCES += rotz-cmd-api.h
 rotz_SOURCES += rotz-add.c
 rotz_SOURCES += rotz-alias.c
@@ -66,8 +66,8 @@ rotz_CPPFLAGS += $(tokyocabinet_CFLAGS)
 rotz_LDFLAGS = $(AM_LDFLAGS)
 rotz_LDFLAGS += -static $(tokyocabinet_LIBS)
 rotz_LDADD = librotz.la libraux.la
-BUILT_SOURCES += rotz-umb.yucc
-BUILT_SOURCES += rotz-umb.yuch
+BUILT_SOURCES += rotz.yucc
+BUILT_SOURCES += rotz.yuch
 
 version.c: version.c.in $(top_builddir)/version.mk
 	sed -e 's,[@]VERSION[@],$(VERSION),g' <$(srcdir)/$@.in >$@

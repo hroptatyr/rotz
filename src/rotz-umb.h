@@ -37,7 +37,7 @@
 #if !defined INCLUDED_rotz_umb_h_
 #define INCLUDED_rotz_umb_h_
 
-#include "rotz-umb.yuch"
+#include "rotz.yuch"
 
 /* common arguments */
 extern const char *db;

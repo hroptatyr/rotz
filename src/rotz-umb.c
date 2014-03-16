@@ -52,7 +52,7 @@
 const char *db = RTZ_DFLT_DB;
 
 
-# include "rotz-umb.yucc"
+#include "rotz.yucc"
 
 int
 main(int argc, char *argv[])
