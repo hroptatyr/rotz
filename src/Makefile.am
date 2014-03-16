@@ -21,6 +21,7 @@ EXTRA_DIST += version.c.in
 
 lib_LTLIBRARIES += librotz.la
 librotz_la_SOURCES = rotz.c rotz.h
+librotz_la_SOURCES += raux.c raux.h
 librotz_la_SOURCES += nifty.h
 librotz_la_CPPFLAGS = $(AM_CPPFLAGS)
 librotz_la_CPPFLAGS += $(tokyocabinet_CFLAGS)
@@ -31,11 +32,7 @@ librotz_la_LDFLAGS += $(lmdb_LIBS)
 EXTRA_librotz_la_SOURCES =
 EXTRA_librotz_la_SOURCES += rotz-tcbdb.c
 EXTRA_librotz_la_SOURCES += rotz-lmdb.c
-
-noinst_LTLIBRARIES += libraux.la
-libraux_la_SOURCES = raux.c raux.h
-libraux_la_SOURCES += version.c version.h
-libraux_la_SOURCES += nifty.h
+BUILT_SOURCES += version.c
 
 if USE_LMDB
 noinst_PROGRAMS += rotz-dump
@@ -61,16 +58,21 @@ rotz_SOURCES += rotz-grep.c
 rotz_SOURCES += rotz-rename.c
 rotz_SOURCES += rotz-search.c
 rotz_SOURCES += rotz-show.c
+rotz_SOURCES += version.c version.h
 rotz_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
+rotz_CPPFLAGS += -DHAVE_VERSION_H
 rotz_CPPFLAGS += $(tokyocabinet_CFLAGS)
 rotz_LDFLAGS = $(AM_LDFLAGS)
 rotz_LDFLAGS += -static $(tokyocabinet_LIBS)
-rotz_LDADD = librotz.la libraux.la
+rotz_LDADD = librotz.la
 BUILT_SOURCES += rotz.yucc
 BUILT_SOURCES += rotz.yuch
 
-version.c: version.c.in $(top_builddir)/version.mk
-	sed -e 's,[@]VERSION[@],$(VERSION),g' <$(srcdir)/$@.in >$@
+## version rules
+version.c: version.c.in $(top_builddir)/.version
+	$(AM_V_GEN) PATH="$(top_builddir)/build-aux:$${PATH}" \
+		yuck$(EXEEXT) scmver --ignore-noscm --force -o $@ \
+			--use-reference --reference $(top_builddir)/.version $<
 
 ## gperf rule
 SUFFIXES += .gperf

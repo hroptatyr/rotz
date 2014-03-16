@@ -36,5 +36,5 @@ SUFFIXES += .man
 			-i "$(srcdir)/rotz-del.xmpl" \
 			-i "$(srcdir)/rotz-show.xmpl" \
 			-i "$(srcdir)/author.h2m" \
-			-o $@ --version-string "$(VERSION)" $<
+			-o $@ --version-file "$(top_builddir)/.version" $<
 

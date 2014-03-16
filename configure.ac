@@ -3,8 +3,7 @@ dnl Autoconf startup.
 dnl -------------------------------------------------------------------------
 
 AC_PREREQ([2.63])
-## t.i.n.a.v = this is not a version, never use it!
-AC_INIT([rotz], [t.i.n.a.v], [https://github.com/hroptatyr/rotz])
+AC_INIT([rotz], [0.1.6.GIT], [https://github.com/hroptatyr/rotz])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_MACRO_DIR([m4])
@@ -27,7 +26,7 @@ AC_COPYRIGHT([dnl
 AM_INIT_AUTOMAKE([foreign parallel-tests dist-xz color-tests])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-GIT_VERSION_MAGIC
+AX_YUCK_SCMVER([version.mk])
 AC_CONFIG_LINKS([GNUmakefile:GNUmakefile])
 
 ## the build chain
