@@ -1,4 +1,4 @@
-/*** rotz-fsck.c -- rotz tag fsck'er
+/*** rotz-umb.c -- rotz umbrella tool
  *
  * Copyright (C) 2013-2014 Sebastian Freundt
  *
@@ -37,118 +37,85 @@
 #if defined HAVE_CONFIG_H
 # include "config.h"
 #endif	/* HAVE_CONFIG_H */
+#include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>
-#if defined USE_TCBDB
-# include <tcbdb.h>
-#endif	/* USE_TCBDB */
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
 #include "rotz-umb.h"
 #include "nifty.h"
 
-
-#if defined USE_LMDB
-static void
-dberror(rotz_t UNUSED(ctx), const char *premsg)
-{
-	fputs(premsg, stderr);
-	fputc('\n', stderr);
-	return;
-}
-
-static int
-dfrg(rotz_t UNUSED(ctx))
-{
-	return 0;
-}
-
-static int
-opti(rotz_t UNUSED(ctx))
-{
-	return 0;
-}
-#elif defined USE_TCBDB
-struct rotz_s {
-	TCBDB *db;
-};
-
-static void
-dberror(rotz_t ctx, const char *premsg)
-{
-	int ecode = tcbdbecode(ctx->db);
-
-	fputs(premsg, stderr);
-	fputs(tcbdberrmsg(ecode), stderr);
-	fputc('\n', stderr);
-	return;
-}
-
-static int
-dfrg(rotz_t ctx)
-{
-	if (!tcbdbdefrag(ctx->db, INT64_MAX)) {
-		return -1;
-	}
-	return 0;
-}
-
-static int
-opti(rotz_t ctx)
-{
-	/* values are taken from tcbmgr.c */
-	static struct {
-		int lmemb;
-		int nmemb;
-		int bnum;
-		int8_t apow;
-		int8_t fpow;
-		uint8_t opts;
-	} opt = {
-		.lmemb = -1,
-		.nmemb = -1,
-		.bnum = -1,
-		.apow = -1,
-		.fpow = -1,
-		.opts = UINT8_MAX,
-	};
-
-	if (!tcbdboptimize(
-		ctx->db,
-		opt.lmemb, opt.nmemb, opt.bnum, opt.apow, opt.fpow, opt.opts)) {
-		return -1;
-	}
-	return 0;
-}
-#endif	/* USE_TCBDB */
+const char *db = RTZ_DFLT_DB;
 
 
-#if defined STANDALONE
+# include "rotz-umb.yucc"
+
 int
-rotz_cmd_fsck(const struct yuck_cmd_fsck_s UNUSED(argi)[static 1U])
+main(int argc, char *argv[])
 {
-	rotz_t ctx;
+	yuck_t argi[1U];
+	int rc = 0;
 
-	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
-		fputs("Error opening rotz datastore\n", stderr);
-		return 1;
+	if (yuck_parse(argi, argc, argv)) {
+		rc = 1;
+		goto out;
 	}
 
-	/* first step is to defrag, ... */
-	if (UNLIKELY(dfrg(ctx) < 0)) {
-		dberror(ctx, "Error during defrag: ");
-	} else if (UNLIKELY(opti(ctx) < 0)) {
-		dberror(ctx, "Error during optimisation: ");
+	if (argi->database_arg) {
+		db = argi->database_arg;
 	}
 
-	/* big rcource freeing */
-	free_rotz(ctx);
-	return 0;
+	switch (argi->cmd) {
+	default:
+	case ROTZ_CMD_NONE:
+		fputs("\
+rotz: Error: invalid or no command given.\n\
+See rotz --help for a list of commands.\n", stderr);
+		rc = 1;
+		break;
+
+	case ROTZ_CMD_ADD:
+		rc = rotz_cmd_add((const void*)argi);
+		break;
+	case ROTZ_CMD_ALIAS:
+		rc = rotz_cmd_alias((const void*)argi);
+		break;
+	case ROTZ_CMD_CLOUD:
+		rc = rotz_cmd_cloud((const void*)argi);
+		break;
+	case ROTZ_CMD_COMBINE:
+		rc = rotz_cmd_combine((const void*)argi);
+		break;
+	case ROTZ_CMD_DEL:
+		rc = rotz_cmd_del((const void*)argi);
+		break;
+	case ROTZ_CMD_EXPORT:
+		rc = rotz_cmd_export((const void*)argi);
+		break;
+	case ROTZ_CMD_FSCK:
+		rc = rotz_cmd_fsck((const void*)argi);
+		break;
+	case ROTZ_CMD_GREP:
+		rc = rotz_cmd_grep((const void*)argi);
+		break;
+	case ROTZ_CMD_RENAME:
+		rc = rotz_cmd_rename((const void*)argi);
+		break;
+	case ROTZ_CMD_SEARCH:
+		rc = rotz_cmd_search((const void*)argi);
+		break;
+	case ROTZ_CMD_SHOW:
+		rc = rotz_cmd_show((const void*)argi);
+		break;
+	}
+
+out:
+	yuck_free(argi);
+	return rc;
 }
-#endif	/* STANDALONE */
 
-/* rotz-fsck.c ends here */
+/* rotz-umb.c ends here */

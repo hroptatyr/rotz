@@ -1,0 +1,114 @@
+Usage: rotz COMMAND ARG...
+
+View and edit tagging databases (rotz.tcb).
+
+  --database=FILE   Use tagging database FILE, default `rotz.tcb'
+
+
+
+Usage: rotz add [TAG [SYM]...]
+
+Add TAG to rolf symbol(s) SYM.
+
+If SYM is omitted on the command line read symbols from stdin.
+If both TAG and SYM are omitted, read tag sym pairs (separated by a
+tab character) from stdin.
+
+  -v, --verbose     Be verbose about the additions made.
+
+
+Usage: rotz alias [TAG [ALIAS]...]
+
+Make ALIAS an alias for TAG.
+If ALIAS is omitted on the command line, read aliases from stdin.
+if no aliases are present on stdin, show aliases for TAG.
+
+If TAG is omitted show all tags and their aliases.
+
+  -d, --delete      Delete alias TAG.
+
+
+Usage: rotz cloud
+
+Show all tags along with a count.
+
+  --top=N           Only display the top N tags.
+  --pivot=TAG|SYM   Display tags/syms that intersect with TAG|SYM
+
+
+Usage: rotz combine [TAG]...
+
+Combine TAGs into one, making them aliases of one another.
+
+If TAG is omitted, read tags to be combined from stdin.
+
+  --into=TAG        Don't create aliases, just move all tags into TAG.
+
+
+Usage: rotz del [TAG [SYM]...]
+
+Remove TAG from rolf symbol(s) SYM.
+
+If SYM is omitted on the command line, read symbols from stdin.
+If TAG is omitted on the command line delete tags read from stdin,
+unless --syms (see below) is given.
+
+  -v, --verbose     Be verbose about the deletions made.
+  --syms            If no TAG nor SYM is given, delete symbols
+                    instead of tags.
+
+
+Usage: rotz export
+
+Export the database to a graph file.
+
+  --cluster         Cluster parameterised tags into one.
+
+  --dot             Output a graph in the dot file format
+  --gml             Output a graph in the gml file format
+
+
+Usage: rotz fsck
+
+Check database for consistency.
+
+
+Usage: rotz grep [TAG|SYM]...
+
+Echo TAG or SYM if present in the database.
+
+If TAG|RSYM is omitted read a list of tags or syms from stdin.
+
+  -v, --invert-match  Display tags or symbols not present in the database.
+  --normalise           Instead of displaying a match with the given
+                        tag or sym display its normalised alias
+                        (does not work for inverted matches).
+
+
+Usage: rotz rename OLDNAME NEWNAME
+
+Rename tag (or symbol) from OLDNAME to NEWNAME.
+
+
+Usage: rotz search SEARCH_STRING
+
+Show all tags that start with SEARCH_STRING.
+
+  --top=N           Only display the top N tags.
+
+
+Usage: rotz show [TAG|SYM]...
+
+Show tags or symbols associated with TAG or SYM.
+
+Multiple tags or symbols may be specified in which case the disjunction
+is returned.
+
+  --syms            If no TAG nor SYM is given, display syms
+                    instead of tags.
+
+  --union           Return a union of all given TAG/SYM results.
+  --intersection    Return the intersection of all given TAG/SYM results.
+  --munion          Return a union with multiplicity of all
+                    given TAG/SYM results.
+  --pairs           Show results in pairs of keyword and result.

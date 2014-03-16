@@ -1,6 +1,6 @@
 /*** rotz-search.c -- rotz tag search
  *
- * Copyright (C) 2013 Sebastian Freundt
+ * Copyright (C) 2013-2014 Sebastian Freundt
  *
  * Author:  Sebastian Freundt <freundt@ga-group.nl>
  *
@@ -44,6 +44,7 @@
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
+#include "rotz-umb.h"
 #include "nifty.h"
 
 struct iter_clo_s {
@@ -83,32 +84,20 @@ iter(rotz_t ctx, const struct iter_clo_s *clo)
 
 
 #if defined STANDALONE
-#include "rotz-search.yucc"
-
 int
-main(int argc, char *argv[])
+rotz_cmd_search(const struct yuck_cmd_search_s argi[static 1U])
 {
 	static struct iter_clo_s clo[1];
-	yuck_t argi[1U];
-	const char *db = RTZ_DFLT_DB;
 	rotz_t ctx;
-	int rc = 0;
 
-	if (yuck_parse(argi, argc, argv)) {
-		rc = 1;
-		goto out;
-	} else if (argi->nargs < 1) {
-		rc = 1;
-		goto out;
+	if (argi->nargs < 1) {
+		fputs("Error: need a search string\n", stderr);
+		return 1;
 	}
 
-	if (argi->database_arg) {
-		db = argi->database_arg;
-	}
 	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
-		rc = 1;
-		goto out;
+		return 1;
 	}
 
 	/* cloud all tags mode, undocumented prefix feature */
@@ -126,9 +115,7 @@ main(int argc, char *argv[])
 
 	/* big rcource freeing */
 	free_rotz(ctx);
-out:
-	yuck_free(argi);
-	return rc;
+	return 0;
 }
 #endif	/* STANDALONE */
 

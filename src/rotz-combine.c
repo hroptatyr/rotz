@@ -1,6 +1,6 @@
 /*** rotz-combine.c -- rotz tag combineer
  *
- * Copyright (C) 2013 Sebastian Freundt
+ * Copyright (C) 2013-2014 Sebastian Freundt
  *
  * Author:  Sebastian Freundt <freundt@ga-group.nl>
  *
@@ -46,6 +46,7 @@
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
+#include "rotz-umb.h"
 #include "nifty.h"
 
 
@@ -95,28 +96,14 @@ combine_tag(rotz_t ctx, const char *tag)
 
 
 #if defined STANDALONE
-#include "rotz-combine.yucc"
-
 int
-main(int argc, char *argv[])
+rotz_cmd_combine(const struct yuck_cmd_combine_s argi[static 1U])
 {
-	yuck_t argi[1U];
 	rotz_t ctx;
-	const char *db = RTZ_DFLT_DB;
-	int rc = 0;
 
-	if (yuck_parse(argi, argc, argv)) {
-		rc = 1;
-		goto out;
-	}
-
-	if (argi->database_arg) {
-		db = argi->database_arg;
-	}
 	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
-		rc = 1;
-		goto out;
+		return 1;
 	}
 
 	if (argi->into_arg) {
@@ -152,9 +139,7 @@ Error moving into tag %s, no such tag\n", tag);
 fina:
 	/* big rcource freeing */
 	free_rotz(ctx);
-out:
-	yuck_free(argi);
-	return rc;
+	return 0;
 }
 #endif	/* STANDALONE */
 

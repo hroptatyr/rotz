@@ -1,6 +1,6 @@
 /*** rotz-add.c -- rotz tag adder
  *
- * Copyright (C) 2013 Sebastian Freundt
+ * Copyright (C) 2013-2014 Sebastian Freundt
  *
  * Author:  Sebastian Freundt <freundt@ga-group.nl>
  *
@@ -46,12 +46,13 @@
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
+#include "rotz-umb.h"
 #include "nifty.h"
 
-
 static int verbosep;
 #define _		rotz_massage_name
 
+
 static void
 add_tag(rotz_t ctx, rtz_vtx_t tid, const char *sym)
 {
@@ -91,34 +92,20 @@ add_tagsym(rotz_t ctx, const char *tag, const char *sym)
 
 
 #if defined STANDALONE
-#include "rotz-add.yucc"
-
 int
-main(int argc, char *argv[])
+rotz_cmd_add(const struct yuck_cmd_add_s argi[static 1U])
 {
-	yuck_t argi[1U];
 	rotz_t ctx;
-	const char *db = RTZ_DFLT_DB;
 	const char *tag;
 	rtz_vtx_t tid;
-	int rc = 0;
 
-	if (yuck_parse(argi, argc, argv)) {
-		rc = 1;
-		goto out;
-	}
-
-	if (argi->database_arg) {
-		db = argi->database_arg;
-	}
 	if (argi->verbose_flag) {
 		verbosep = 1;
 	}
 
 	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
-		rc = 1;
-		goto out;
+		return 1;
 	}
 	if (argi->nargs == 0U && !isatty(STDIN_FILENO)) {
 		/* tag \t sym mode, both from stdin */
@@ -165,9 +152,7 @@ main(int argc, char *argv[])
 fini:
 	/* big rcource freeing */
 	free_rotz(ctx);
-out:
-	yuck_free(argi);
-	return rc;
+	return 0;
 }
 #endif	/* STANDALONE */
 

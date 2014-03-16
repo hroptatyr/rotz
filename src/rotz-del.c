@@ -1,6 +1,6 @@
 /*** rotz-del.c -- rotz tag del'er
  *
- * Copyright (C) 2013 Sebastian Freundt
+ * Copyright (C) 2013-2014 Sebastian Freundt
  *
  * Author:  Sebastian Freundt <freundt@ga-group.nl>
  *
@@ -46,6 +46,7 @@
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
+#include "rotz-umb.h"
 #include "nifty.h"
 
 
@@ -134,32 +135,18 @@ del_sym(rotz_t ctx, const char *sym)
 
 
 #if defined STANDALONE
-#include "rotz-del.yucc"
-
 int
-main(int argc, char *argv[])
+rotz_cmd_del(const struct yuck_cmd_del_s argi[static 1U])
 {
-	yuck_t argi[1U];
 	rotz_t ctx;
-	const char *db = RTZ_DFLT_DB;
-	int rc = 0;
 
-	if (yuck_parse(argi, argc, argv)) {
-		rc = 1;
-		goto out;
-	}
-
-	if (argi->database_arg) {
-		db = argi->database_arg;
-	}
 	if (argi->verbose_flag) {
 		verbosep = 1;
 	}
 
 	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
 		fputs("Error opening rotz datastore\n", stderr);
-		rc = 1;
-		goto out;
+		return 1;
 	}
 	if (argi->nargs > 1U) {
 		const char *tag;
@@ -224,9 +211,7 @@ Error: cannot find tag `%s' in database file, no deletions\n", argi->args[0U]);
 fini:
 	/* big rcource freeing */
 	free_rotz(ctx);
-out:
-	yuck_free(argi);
-	return rc;
+	return 0;
 }
 #endif	/* STANDALONE */
 

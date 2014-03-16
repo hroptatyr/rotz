@@ -1,6 +1,6 @@
 /*** rotz-grep.c -- rotz tag grepper
  *
- * Copyright (C) 2013 Sebastian Freundt
+ * Copyright (C) 2013-2014 Sebastian Freundt
  *
  * Author:  Sebastian Freundt <freundt@ga-group.nl>
  *
@@ -45,17 +45,14 @@
 
 #include "rotz.h"
 #include "rotz-cmd-api.h"
+#include "rotz-umb.h"
 #include "raux.h"
 #include "nifty.h"
 
 
 #if defined STANDALONE
-#include "rotz-grep.yucc"
-
-static yuck_t argi[1U];
-
 static void
-handle_one(rotz_t ctx, const char *input)
+handle_one(rotz_t ctx, const struct yuck_cmd_grep_s *argi, const char *input)
 {
 	const char *tagsym;
 	rtz_vtx_t tsid;
@@ -85,30 +82,19 @@ handle_one(rotz_t ctx, const char *input)
 }
 
 int
-main(int argc, char *argv[])
+rotz_cmd_grep(const struct yuck_cmd_grep_s argi[static 1U])
 {
 	rotz_t ctx;
-	const char *db = RTZ_DFLT_DB;
-	int rc = 0;
 
-	if (yuck_parse(argi, argc, argv)) {
-		rc = 1;
-		goto out;
-	}
-
-	if (argi->database_arg) {
-		db = argi->database_arg;
-	}
 	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
-		error("Error opening rotz datastore");
-		rc = 1;
-		goto out;
+		fputs("Error opening rotz datastore\n", stderr);
+		return 1;
 	}
 
 	for (size_t i = 0U; i < argi->nargs; i++) {
 		const char *const input = argi->args[i];
 
-		handle_one(ctx, input);
+		handle_one(ctx, argi, input);
 	}
 	if (argi->nargs == 0U && !isatty(STDIN_FILENO)) {
 		/* read the guys from STDIN */
@@ -118,16 +104,14 @@ main(int argc, char *argv[])
 
 		while ((nrd = getline(&line, &llen, stdin)) > 0) {
 			line[nrd - 1] = '\0';
-			handle_one(ctx, line);
+			handle_one(ctx, argi, line);
 		}
 		free(line);
 	}
 
 	/* big rcource freeing */
 	free_rotz(ctx);
-out:
-	yuck_free(argi);
-	return rc;
+	return 0;
 }
 #endif	/* STANDALONE */
 
