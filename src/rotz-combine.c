@@ -95,29 +95,22 @@ combine_tag(rotz_t ctx, const char *tag)
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-combine.h"
-#include "rotz-combine.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
+#include "rotz-combine.yucc"
 
 int
 main(int argc, char *argv[])
 {
-	struct rotz_args_info argi[1];
+	yuck_t argi[1];
 	rotz_t ctx;
 	const char *db = RTZ_DFLT_DB;
 	int res = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
+	if (yuck_parse(argi, argc, argv)) {
 		res = 1;
 		goto out;
 	}
 
-	if (argi->database_given) {
+	if (argi->database_arg) {
 		db = argi->database_arg;
 	}
 	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
@@ -126,7 +119,7 @@ main(int argc, char *argv[])
 		goto out;
 	}
 
-	if (argi->into_given) {
+	if (argi->into_arg) {
 		const char *tag = rotz_tag(argi->into_arg);
 		rtz_vtx_t into_tid;
 
@@ -135,13 +128,13 @@ main(int argc, char *argv[])
 Error moving into tag %s, no such tag\n", tag);
 			goto fina;
 		}
-		for (unsigned int i = 0; i < argi->inputs_num; i++) {
-			combine_into(ctx, into_tid, argi->inputs[i]);
+		for (size_t i = 0U; i < argi->nargs; i++) {
+			combine_into(ctx, into_tid, argi->args[i]);
 		}
-	} else if (argi->inputs_num) {
+	} else if (argi->nargs) {
 		/* combine everything into the first argument */
-		for (unsigned int i = 0; i < argi->inputs_num; i++) {
-			combine_tag(ctx, argi->inputs[i]);
+		for (size_t i = 0U; i < argi->nargs; i++) {
+			combine_tag(ctx, argi->args[i]);
 		}
 	} else if (!isatty(STDIN_FILENO)) {
 		/* combine tags from stdin */
@@ -160,7 +153,7 @@ fina:
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
-	rotz_parser_free(argi);
+	yuck_free(argi);
 	return res;
 }
 #endif	/* STANDALONE */

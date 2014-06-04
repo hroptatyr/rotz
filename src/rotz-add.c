@@ -91,34 +91,27 @@ add_tagsym(rotz_t ctx, const char *tag, const char *sym)
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-add.h"
-#include "rotz-add.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
+#include "rotz-add.yucc"
 
 int
 main(int argc, char *argv[])
 {
-	struct rotz_args_info argi[1];
+	yuck_t argi[1];
 	rotz_t ctx;
 	const char *db = RTZ_DFLT_DB;
 	const char *tag;
 	rtz_vtx_t tid;
 	int res = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
+	if (yuck_parse(argi, argc, argv)) {
 		res = 1;
 		goto out;
 	}
 
-	if (argi->database_given) {
+	if (argi->database_arg) {
 		db = argi->database_arg;
 	}
-	if (argi->verbose_given) {
+	if (argi->verbose_flag) {
 		verbosep = 1;
 	}
 
@@ -127,7 +120,7 @@ main(int argc, char *argv[])
 		res = 1;
 		goto out;
 	}
-	if (argi->inputs_num == 0 && !isatty(STDIN_FILENO)) {
+	if (argi->nargs == 0U && !isatty(STDIN_FILENO)) {
 		/* tag \t sym mode, both from stdin */
 		char *line = NULL;
 		size_t llen = 0U;
@@ -149,14 +142,14 @@ main(int argc, char *argv[])
 		goto fini;
 	}
 	/* ... otherwise associate with TAG somehow */
-	tag = rotz_tag(argi->inputs[0]);
+	tag = rotz_tag(argi->args[0U]);
 	if (UNLIKELY((tid = rotz_add_vertex(ctx, tag)) == 0U)) {
 		goto fini;
 	}
-	for (unsigned int i = 1; i < argi->inputs_num; i++) {
-		add_tag(ctx, tid, argi->inputs[i]);
+	for (size_t i = 1U; i < argi->nargs; i++) {
+		add_tag(ctx, tid, argi->args[i]);
 	}
-	if (argi->inputs_num == 1 && !isatty(STDIN_FILENO)) {
+	if (argi->nargs == 1U && !isatty(STDIN_FILENO)) {
 		/* add tags from stdin */
 		char *line = NULL;
 		size_t llen = 0U;
@@ -173,7 +166,7 @@ fini:
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
-	rotz_parser_free(argi);
+	yuck_free(argi);
 	return res;
 }
 #endif	/* STANDALONE */

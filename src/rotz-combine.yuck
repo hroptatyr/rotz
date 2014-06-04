@@ -1,0 +1,8 @@
+Usage: rotz-combine [OPTIONS]... [TAG]...
+
+Combine TAGs into one, making them aliases of one another.
+
+If TAG is omitted, read tags to be combined from stdin.
+
+      --database=FILE|HOST  Tagging service file or host, default: `rotz.tcb'
+      --into=TAG            Don't create aliases, just move all tags into TAG.

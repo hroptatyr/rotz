@@ -1,0 +1,5 @@
+Usage: rotz-update [OPTIONS]...
+
+Update old database files to new policies.
+
+      --database=FILE|HOST  Tagging service file or host, default: `rotz.tcb'

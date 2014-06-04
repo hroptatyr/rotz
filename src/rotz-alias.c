@@ -92,31 +92,24 @@ iter_cb(rtz_vtx_t vid, const char *vtx, void *clo)
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-alias.h"
-#include "rotz-alias.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
+#include "rotz-alias.yucc"
 
 int
 main(int argc, char *argv[])
 {
-	struct rotz_args_info argi[1];
+	yuck_t argi[1];
 	rotz_t ctx;
 	const char *db = RTZ_DFLT_DB;
 	const char *tag;
 	rtz_vtx_t tid;
 	int res = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
+	if (yuck_parse(argi, argc, argv)) {
 		res = 1;
 		goto out;
 	}
 
-	if (argi->database_given) {
+	if (argi->database_arg) {
 		db = argi->database_arg;
 	}
 	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
@@ -125,20 +118,20 @@ main(int argc, char *argv[])
 		goto out;
 	}
 
-	if (argi->inputs_num > 0) {
-		tag = rotz_tag(argi->inputs[0]);
+	if (argi->nargs > 0U) {
+		tag = rotz_tag(argi->args[0]);
 		if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
 			goto fini;
 		}
-		if (argi->inputs_num > 1 && !argi->delete_given) {
-			for (unsigned int i = 1; i < argi->inputs_num; i++) {
-				alias_tag(ctx, tid, argi->inputs[i]);
+		if (argi->nargs > 1U && !argi->delete_flag) {
+			for (unsigned int i = 1U; i < argi->nargs; i++) {
+				alias_tag(ctx, tid, argi->args[i]);
 			}
-		} else if (argi->delete_given) {
+		} else if (argi->delete_flag) {
 			/* del tag */
 			rotz_rem_alias(ctx, tag);
-			for (unsigned int i = 1; i < argi->inputs_num; i++) {
-				rotz_rem_alias(ctx, rotz_tag(argi->inputs[i]));
+			for (unsigned int i = 1U; i < argi->nargs; i++) {
+				rotz_rem_alias(ctx, rotz_tag(argi->args[i]));
 			}
 		} else if (isatty(STDIN_FILENO)) {
 			/* report aliases for TAG */
@@ -164,7 +157,7 @@ fini:
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
-	rotz_parser_free(argi);
+	yuck_free(argi);
 	return res;
 }
 #endif	/* STANDALONE */
