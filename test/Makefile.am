@@ -48,7 +48,6 @@ CLEANFILES += rotz.tcb
 ## our friendly helpers
 check_PROGRAMS += clitoris
 clitoris_CPPFLAGS = $(AM_CPPFLAGS)
-clitoris_CPPFLAGS += -D_GNU_SOURCE
 clitoris_CPPFLAGS += -DHAVE_PTY_H
 clitoris_LDFLAGS = $(AM_LDFLAGS) -static
 clitoris_LDFLAGS += -lutil
