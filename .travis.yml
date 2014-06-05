@@ -8,16 +8,14 @@ before_install:
   - sudo apt-get -qq update
 
 install:
-  - sudo apt-get install -qq gengetopt
-  - sudo apt-get install -qq help2man
   - sudo apt-get install -qq libtokyocabinet-dev
 
 before_script:
   - autoreconf -vfi
 
 script: 
-  - ./configure || (cat config.log; false)
-  - make clean all check distcheck || (cat test/test-suite.log; false)
+  - ./configure || { cat config.log; false; }
+  - make clean all check distcheck || { cat test/test-suite.log; false; }
 
 ## whitelist
 branches:
