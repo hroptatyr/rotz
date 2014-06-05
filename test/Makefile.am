@@ -50,12 +50,10 @@ CLEANFILES += rotz.tcb
 check_PROGRAMS += clitoris
 clitoris_SOURCES = clitoris.c clitoris.yuck
 clitoris_CPPFLAGS = $(AM_CPPFLAGS)
-clitoris_CPPFLAGS += -D_GNU_SOURCE
 clitoris_CPPFLAGS += -DHAVE_PTY_H
 clitoris_LDFLAGS = $(AM_LDFLAGS) -static
 clitoris_LDFLAGS += -lutil
 BUILT_SOURCES += clitoris.yucc
-
 
 ## yuck rule
 SUFFIXES += .yuck
@@ -63,8 +61,5 @@ SUFFIXES += .yucc
 .yuck.yucc:
 	$(AM_V_GEN) PATH=$(top_builddir)/build-aux:"$${PATH}" \
 		yuck$(EXEEXT) gen -o $@ $<
-
-clean-local:
-	-rm -rf *.tmpd
 
 ## Makefile.am ends here

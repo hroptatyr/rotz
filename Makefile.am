@@ -15,9 +15,10 @@ SUBDIRS += src
 SUBDIRS += info
 SUBDIRS += test
 
+EXTRA_DIST += README.md
+
 DISTCLEANFILES += version.mk
 EXTRA_DIST += version.mk.in
-
 BUILT_SOURCES += .version
 
 .version:

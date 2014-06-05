@@ -8,24 +8,23 @@ LC_ALL=C
 
 BUILT_SOURCES =
 EXTRA_DIST = $(BUILT_SOURCES)
+SUFFIXES =
 
 man1_MANS =
 man1_MANS += $(built_mans)
 
-EXTRA_DIST += author.h2m
 BUILT_SOURCES += $(built_mans) $(built_infos)
 SUFFIXES =
 
 built_mans =
 built_mans += rotz.man
 
+EXTRA_DIST += author.h2m
 EXTRA_DIST += rotz-add.xmpl
 EXTRA_DIST += rotz-del.xmpl
 EXTRA_DIST += rotz-show.xmpl
 
 VPATH += @top_srcdir@/src
-
-## help2man helpers
 SUFFIXES += .yuck
 SUFFIXES += .man
 .yuck.man:
@@ -38,3 +37,4 @@ SUFFIXES += .man
 			-i "$(srcdir)/author.h2m" \
 			-o $@ --version-file "$(top_builddir)/.version" $<
 
+## Makefile.am ends here

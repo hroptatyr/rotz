@@ -76,7 +76,7 @@ iter_cb(rtz_const_buf_t k, rtz_const_buf_t v, void *clo)
 }
 
 static void
-iter(rotz_t ctx, const struct iter_clo_s *clo)
+iter(rotz_t ctx, struct iter_clo_s *clo)
 {
 	rotz_iter(ctx, clo->prfx, iter_cb, clo);
 	return;
