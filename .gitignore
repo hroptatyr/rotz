@@ -26,6 +26,7 @@ stamp-h1
 .deps
 .libs
 test-driver
+compile
 
 ##binaries and shite
 truffle
