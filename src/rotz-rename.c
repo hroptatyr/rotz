@@ -74,34 +74,27 @@ couldn't rename tags, target tag exists\n", stderr);
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-rename.h"
-#include "rotz-rename.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
+#include "rotz-rename.yucc"
 
 int
 main(int argc, char *argv[])
 {
-	struct rotz_args_info argi[1];
+	yuck_t argi[1];
 	rotz_t ctx;
 	const char *db = RTZ_DFLT_DB;
 	int res = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
+	if (yuck_parse(argi, argc, argv)) {
 		res = 1;
 		goto out;
-	} else if (argi->inputs_num != 2) {
+	} else if (argi->nargs != 2U) {
 		fputs("Error: need OLDNAME and NEWNAME\n\n", stderr);
-		rotz_parser_print_help();
+		yuck_auto_help(argi);
 		res = 1;
 		goto out;
 	}
 
-	if (argi->database_given) {
+	if (argi->database_arg) {
 		db = argi->database_arg;
 	}
 	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
@@ -110,12 +103,12 @@ main(int argc, char *argv[])
 		goto out;
 	}
 
-	rename_tag(ctx, argi->inputs[0], argi->inputs[1]);
+	rename_tag(ctx, argi->args[0U], argi->args[1U]);
 
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
-	rotz_parser_free(argi);
+	yuck_free(argi);
 	return res;
 }
 #endif	/* STANDALONE */

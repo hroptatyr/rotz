@@ -1,0 +1,12 @@
+Usage: rotz-del [OPTIONS]... [TAG [RSYM]]...
+
+Remove TAG from rolf symbol(s) RSYM.
+
+If RSYM is omitted on the command line, read symbols from stdin.
+If TAG is omitted on the command line delete tags read from stdin, unless
+--syms (see below) is given.
+
+  -v, --verbose             Be verbose about the deletions made.
+      --database=FILE|HOST  Tagging service file or host, default: `rotz.tcb'
+      --syms                If no TAG or RSYM is given, delete syms instead of
+                              tags.

@@ -75,7 +75,7 @@ iter_cb(rtz_const_buf_t k, rtz_const_buf_t v, void *clo)
 }
 
 static void
-iter(rotz_t ctx, const struct iter_clo_s *clo)
+iter(rotz_t ctx, struct iter_clo_s *clo)
 {
 	rotz_iter(ctx, clo->prfx, iter_cb, clo);
 	return;
@@ -83,33 +83,26 @@ iter(rotz_t ctx, const struct iter_clo_s *clo)
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-search.h"
-#include "rotz-search.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
+#include "rotz-search.yucc"
 
 int
 main(int argc, char *argv[])
 {
 	static struct iter_clo_s clo[1];
-	struct rotz_args_info argi[1];
+	yuck_t argi[1];
 	const char *db = RTZ_DFLT_DB;
 	rotz_t ctx;
 	int res = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
+	if (yuck_parse(argi, argc, argv)) {
 		res = 1;
 		goto out;
-	} else if (argi->inputs_num < 1) {
+	} else if (argi->nargs < 1U) {
 		res = 1;
 		goto out;
 	}
 
-	if (argi->database_given) {
+	if (argi->database_arg) {
 		db = argi->database_arg;
 	}
 	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
@@ -120,12 +113,12 @@ main(int argc, char *argv[])
 
 	/* cloud all tags mode, undocumented prefix feature */
 	clo->ctx = ctx;
-	clo->prfx.d = rotz_tag(argi->inputs[0]);
+	clo->prfx.d = rotz_tag(argi->args[0U]);
 	clo->prfx.z = strlen(clo->prfx.d);
 	clo->show_numbers = 1;
 
-	if (argi->top_given) {
-		clo->ntop = argi->top_arg;
+	if (argi->top_arg) {
+		clo->ntop = strtoul(argi->top_arg, NULL, 0);
 	} else {
 		clo->ntop = -1UL;
 	}
@@ -134,7 +127,7 @@ main(int argc, char *argv[])
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
-	rotz_parser_free(argi);
+	yuck_free(argi);
 	return res;
 }
 #endif	/* STANDALONE */

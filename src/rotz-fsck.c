@@ -127,29 +127,22 @@ opti(rotz_t ctx)
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-fsck.h"
-#include "rotz-fsck.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
+#include "rotz-fsck.yucc"
 
 int
 main(int argc, char *argv[])
 {
-	struct rotz_args_info argi[1];
+	yuck_t argi[1];
 	const char *db = RTZ_DFLT_DB;
 	rotz_t ctx;
 	int res = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
+	if (yuck_parse(argi, argc, argv)) {
 		res = 1;
 		goto out;
 	}
 
-	if (argi->database_given) {
+	if (argi->database_arg) {
 		db = argi->database_arg;
 	}
 	if (UNLIKELY((ctx = make_rotz(db, O_CREAT | O_RDWR)) == NULL)) {
@@ -168,7 +161,7 @@ main(int argc, char *argv[])
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
-	rotz_parser_free(argi);
+	yuck_free(argi);
 	return res;
 }
 #endif	/* STANDALONE */

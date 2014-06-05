@@ -8,6 +8,7 @@ LC_ALL=C
 
 BUILT_SOURCES =
 EXTRA_DIST = $(BUILT_SOURCES)
+SUFFIXES =
 
 man1_MANS =
 man1_MANS += $(built_mans)
@@ -27,28 +28,20 @@ built_mans += rotz-cloud.man
 built_mans += rotz-fsck.man
 built_mans += rotz-grep.man
 
-EXTRA_DIST += rotz-add.name
-EXTRA_DIST += rotz-del.name
-EXTRA_DIST += rotz-show.name
-EXTRA_DIST += rotz-alias.name
-EXTRA_DIST += rotz-combine.name
-EXTRA_DIST += rotz-search.name
-EXTRA_DIST += rotz-rename.name
-EXTRA_DIST += rotz-cloud.name
-EXTRA_DIST += rotz-fsck.name
-EXTRA_DIST += rotz-grep.name
+EXTRA_DIST += author.h2m
 
 EXTRA_DIST += rotz-add.xmpl
 EXTRA_DIST += rotz-del.xmpl
 EXTRA_DIST += rotz-show.xmpl
 
-VPATH += $(top_srcdir)/src
+VPATH += @top_srcdir@/src
+SUFFIXES += .yuck
+SUFFIXES += .man
+.yuck.man:
+	$(AM_V_GEN) PATH="$(top_builddir)/build-aux:$${PATH}" \
+		yuck$(EXEEXT) genman \
+			--package "$(PACKAGE_NAME)" \
+			-i "$(srcdir)/author.h2m" \
+			-o $@ --version-file "$(top_builddir)/.version" $<
 
-## help2man helpers
-%.man: %.ggo $(top_srcdir)/configure $(top_builddir)/version.mk
-	$(AM_V_GEN) $(HELP2MAN) -S "$(PACKAGE_STRING)" -p "($(PACKAGE))$*" \
-		-I "$(srcdir)/author.h2m" \
-		-i "$(srcdir)/$*.name" \
-		-I "$(srcdir)/$*.xmpl" \
-		-o $@ $(top_builddir)/src/$*
-
+## Makefile.am ends here

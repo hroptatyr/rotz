@@ -1,0 +1,9 @@
+Usage: rotz-export [OPTIONS]...
+
+Export the database to a graph file.
+
+      --database=FILE|HOST  Tagging service file or host, default: `rotz.tcb'
+      --cluster             Cluster parameterised tags into one.
+
+      --dot                 Output a graph in the dot file format
+      --gml                 Output a graph in the gml file format

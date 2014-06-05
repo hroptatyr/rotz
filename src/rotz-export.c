@@ -176,29 +176,22 @@ graph [\n\
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-export.h"
-#include "rotz-export.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
+#include "rotz-export.yucc"
 
 int
 main(int argc, char *argv[])
 {
-	struct rotz_args_info argi[1];
+	yuck_t argi[1];
 	rotz_t ctx;
 	const char *db = RTZ_DFLT_DB;
 	int res = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
+	if (yuck_parse(argi, argc, argv)) {
 		res = 1;
 		goto out;
 	}
 
-	if (argi->database_given) {
+	if (argi->database_arg) {
 		db = argi->database_arg;
 	}
 	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
@@ -208,11 +201,11 @@ main(int argc, char *argv[])
 	}
 
 	/* setting global opts */
-	clusterp = argi->cluster_given;
+	clusterp = argi->cluster_flag;
 
-	if (argi->gml_given) {
+	if (argi->gml_flag) {
 		xprt_gml(ctx);
-	} else if (argi->dot_given) {
+	} else if (argi->dot_flag) {
 		xprt_dot(ctx);
 	} else {
 		/* default file format is csv */
@@ -222,7 +215,7 @@ main(int argc, char *argv[])
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
-	rotz_parser_free(argi);
+	yuck_free(argi);
 	return res;
 }
 #endif	/* STANDALONE */

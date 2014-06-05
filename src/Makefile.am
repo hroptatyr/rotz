@@ -14,6 +14,7 @@ noinst_HEADERS =
 BUILT_SOURCES =
 EXTRA_DIST = $(BUILT_SOURCES)
 CLEANFILES = 
+SUFFIXES =
 
 CLEANFILES += version.c
 EXTRA_DIST += version.c.in
@@ -39,114 +40,114 @@ libraux_la_SOURCES += nifty.h
 bin_PROGRAMS += rotz-add
 rotz_add_SOURCES = rotz-add.c
 rotz_add_SOURCES += rotz-cmd-api.h
-rotz_add_SOURCES += rotz-add.ggo
+rotz_add_SOURCES += rotz-add.yuck
 rotz_add_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_add_LDFLAGS = $(AM_LDFLAGS)
 rotz_add_LDADD = librotz.la
 rotz_add_LDADD += libraux.la
-BUILT_SOURCES += rotz-add.x rotz-add.h
+BUILT_SOURCES += rotz-add.yucc
 
 bin_PROGRAMS += rotz-del
 rotz_del_SOURCES = rotz-del.c
 rotz_del_SOURCES += rotz-cmd-api.h
-rotz_del_SOURCES += rotz-del.ggo
+rotz_del_SOURCES += rotz-del.yuck
 rotz_del_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_del_LDFLAGS = $(AM_LDFLAGS)
 rotz_del_LDADD = librotz.la
 rotz_del_LDADD += libraux.la
-BUILT_SOURCES += rotz-del.x rotz-del.h
+BUILT_SOURCES += rotz-del.yucc
 
 bin_PROGRAMS += rotz-show
 rotz_show_SOURCES = rotz-show.c
 rotz_show_SOURCES += rotz-cmd-api.h
-rotz_show_SOURCES += rotz-show.ggo
+rotz_show_SOURCES += rotz-show.yuck
 rotz_show_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_show_LDFLAGS = $(AM_LDFLAGS)
 rotz_show_LDADD = librotz.la
 rotz_show_LDADD += libraux.la
-BUILT_SOURCES += rotz-show.x rotz-show.h
+BUILT_SOURCES += rotz-show.yucc
 
 bin_PROGRAMS += rotz-alias
 rotz_alias_SOURCES = rotz-alias.c
 rotz_alias_SOURCES += rotz-cmd-api.h
-rotz_alias_SOURCES += rotz-alias.ggo
+rotz_alias_SOURCES += rotz-alias.yuck
 rotz_alias_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_alias_LDFLAGS = $(AM_LDFLAGS)
 rotz_alias_LDADD = librotz.la
 rotz_alias_LDADD += libraux.la
-BUILT_SOURCES += rotz-alias.x rotz-alias.h
+BUILT_SOURCES += rotz-alias.yucc
 
 bin_PROGRAMS += rotz-combine
 rotz_combine_SOURCES = rotz-combine.c
 rotz_combine_SOURCES += rotz-cmd-api.h
-rotz_combine_SOURCES += rotz-combine.ggo
+rotz_combine_SOURCES += rotz-combine.yuck
 rotz_combine_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_combine_LDFLAGS = $(AM_LDFLAGS)
 rotz_combine_LDADD = librotz.la
 rotz_combine_LDADD += libraux.la
-BUILT_SOURCES += rotz-combine.x rotz-combine.h
+BUILT_SOURCES += rotz-combine.yucc
 
 bin_PROGRAMS += rotz-rename
 rotz_rename_SOURCES = rotz-rename.c
 rotz_rename_SOURCES += rotz-cmd-api.h
-rotz_rename_SOURCES += rotz-rename.ggo
+rotz_rename_SOURCES += rotz-rename.yuck
 rotz_rename_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_rename_LDFLAGS = $(AM_LDFLAGS)
 rotz_rename_LDADD = librotz.la
 rotz_rename_LDADD += libraux.la
-BUILT_SOURCES += rotz-rename.x rotz-rename.h
+BUILT_SOURCES += rotz-rename.yucc
 
 bin_PROGRAMS += rotz-cloud
 rotz_cloud_SOURCES = rotz-cloud.c
 rotz_cloud_SOURCES += rotz-cmd-api.h
-rotz_cloud_SOURCES += rotz-cloud.ggo
+rotz_cloud_SOURCES += rotz-cloud.yuck
 rotz_cloud_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_cloud_LDFLAGS = $(AM_LDFLAGS)
 rotz_cloud_LDADD = librotz.la
 rotz_cloud_LDADD += libraux.la
-BUILT_SOURCES += rotz-cloud.x rotz-cloud.h
+BUILT_SOURCES += rotz-cloud.yucc
 
 bin_PROGRAMS += rotz-search
 rotz_search_SOURCES = rotz-search.c
 rotz_search_SOURCES += rotz-cmd-api.h
-rotz_search_SOURCES += rotz-search.ggo
+rotz_search_SOURCES += rotz-search.yuck
 rotz_search_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_search_LDFLAGS = $(AM_LDFLAGS)
 rotz_search_LDADD = librotz.la
 rotz_search_LDADD += libraux.la
-BUILT_SOURCES += rotz-search.x rotz-search.h
+BUILT_SOURCES += rotz-search.yucc
 
 bin_PROGRAMS += rotz-export
 rotz_export_SOURCES = rotz-export.c
 rotz_export_SOURCES += rotz-cmd-api.h
-rotz_export_SOURCES += rotz-export.ggo
+rotz_export_SOURCES += rotz-export.yuck
 rotz_export_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_export_LDFLAGS = $(AM_LDFLAGS)
 rotz_export_LDADD = librotz.la
 rotz_export_LDADD += libraux.la
-BUILT_SOURCES += rotz-export.x rotz-export.h
+BUILT_SOURCES += rotz-export.yucc
 
 bin_PROGRAMS += rotz-fsck
 rotz_fsck_SOURCES = rotz-fsck.c
 rotz_fsck_SOURCES += rotz-cmd-api.h
-rotz_fsck_SOURCES += rotz-fsck.ggo
+rotz_fsck_SOURCES += rotz-fsck.yuck
 rotz_fsck_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_fsck_CPPFLAGS += $(tokyocabinet_CFLAGS)
 rotz_fsck_LDFLAGS = $(AM_LDFLAGS)
 rotz_fsck_LDFLAGS += $(tokyocabinet_LIBS)
 rotz_fsck_LDADD = librotz.la
 rotz_fsck_LDADD += libraux.la
-BUILT_SOURCES += rotz-fsck.x rotz-fsck.h
+BUILT_SOURCES += rotz-fsck.yucc
 
 bin_PROGRAMS += rotz-grep
 rotz_grep_SOURCES = rotz-grep.c
 rotz_grep_SOURCES += rotz-cmd-api.h
-rotz_grep_SOURCES += rotz-grep.ggo
+rotz_grep_SOURCES += rotz-grep.yuck
 rotz_grep_CPPFLAGS = $(AM_CPPFLAGS) -DSTANDALONE
 rotz_grep_LDFLAGS = $(AM_LDFLAGS)
 rotz_grep_LDADD = librotz.la
 rotz_grep_LDADD += libraux.la
-BUILT_SOURCES += rotz-grep.x rotz-grep.h
+BUILT_SOURCES += rotz-grep.yucc
 
 if USE_LMDB
 noinst_PROGRAMS += rotz-dump
@@ -158,22 +159,23 @@ rotz_dump_LDFLAGS += $(lmdb_LIBS)
 endif  USE_LMDB
 
 
-version.c: version.c.in $(top_builddir)/version.mk
-	sed -e 's,[@]VERSION[@],$(VERSION),g' <$(srcdir)/$@.in >$@
+## version rules
+version.c: version.c.in $(top_builddir)/.version
+	$(AM_V_GEN) PATH="$(top_builddir)/build-aux:$${PATH}" \
+		yuck$(EXEEXT) scmver --ignore-noscm --force -o $@ \
+			--use-reference --reference $(top_builddir)/.version $<
 
 ## gperf rule
-%.c: %.gperf
+SUFFIXES += .gperf
+.gperf.c:
 	$(AM_V_GEN) $(GPERF) -L ANSI-C $< --output-file $@
 
-## gengetopt rule with sed hack to avoid using VERSION and config.h
-## depend on Makefile.am to survive a git pull
-%.x %.h: %.ggo Makefile.am
-	$(AM_V_GEN) gengetopt -l -c x -i $< -F $* \
-	&& sed \
-	  -e 's,config.h,version.h,g' \
-	  -e 's,\(.*\)_PARSER_VERSION VERSION,\1_PARSER_VERSION $(PACKAGE)_version_string,g' \
-	  $*.h >$*.h-t \
-	&& mv $*.h-t $*.h
+## yuck rule
+SUFFIXES += .yuck
+SUFFIXES += .yucc
+.yuck.yucc:
+	$(AM_V_GEN) PATH=$(top_builddir)/build-aux:"$${PATH}" \
+		yuck$(EXEEXT) gen -o $@ $<
 
 ## for dist or dist check we need binaries, so help2man can work
 dist-hook: $(bin_PROGRAMS)

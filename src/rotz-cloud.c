@@ -156,29 +156,22 @@ pivot(const char *what)
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-cloud.h"
-#include "rotz-cloud.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
+#include "rotz-cloud.yucc"
 
 int
 main(int argc, char *argv[])
 {
 	static struct iter_clo_s clo[1];
-	struct rotz_args_info argi[1];
+	yuck_t argi[1];
 	const char *db = RTZ_DFLT_DB;
 	int res = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
+	if (yuck_parse(argi, argc, argv)) {
 		res = 1;
 		goto out;
 	}
 
-	if (argi->database_given) {
+	if (argi->database_arg) {
 		db = argi->database_arg;
 	}
 	if (UNLIKELY((ctx = make_rotz(db)) == NULL)) {
@@ -188,21 +181,21 @@ main(int argc, char *argv[])
 	}
 
 	/* cloud all tags mode, undocumented prefix feature */
-	if (argi->inputs_num) {
-		clo->pre.z = strlen(argi->inputs[0]);
-		clo->pre.d = argi->inputs[0];
+	if (argi->nargs) {
+		clo->pre.z = strlen(argi->args[0]);
+		clo->pre.d = argi->args[0];
 	}
-	if (argi->top_given) {
-		clo->wl.z = argi->top_arg;
+	if (argi->top_arg) {
+		clo->wl.z = strtoul(argi->top_arg, NULL, 0);
 		clo->wl.d = calloc(clo->wl.z, sizeof(*clo->wl.d));
 		clo->wl.w = calloc(clo->wl.z, sizeof(*clo->wl.w));
 	}
-	if (argi->pivot_given) {
+	if (argi->pivot_arg) {
 		pivot(argi->pivot_arg);
 	} else {
 		rotz_vtx_iter(ctx, iter_cb, clo);
 	}
-	if (argi->top_given) {
+	if (argi->top_arg) {
 		prnt_top(clo);
 		rotz_free_wtxlst(clo->wl);
 	}
@@ -210,7 +203,7 @@ main(int argc, char *argv[])
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
-	rotz_parser_free(argi);
+	yuck_free(argi);
 	return res;
 }
 #endif	/* STANDALONE */

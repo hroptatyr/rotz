@@ -134,32 +134,25 @@ del_sym(rotz_t ctx, const char *sym)
 
 
 #if defined STANDALONE
-#if defined __INTEL_COMPILER
-# pragma warning (disable:593)
-#endif	/* __INTEL_COMPILER */
-#include "rotz-del.h"
-#include "rotz-del.x"
-#if defined __INTEL_COMPILER
-# pragma warning (default:593)
-#endif	/* __INTEL_COMPILER */
+#include "rotz-del.yucc"
 
 int
 main(int argc, char *argv[])
 {
-	struct rotz_args_info argi[1];
+	yuck_t argi[1];
 	rotz_t ctx;
 	const char *db = RTZ_DFLT_DB;
 	int res = 0;
 
-	if (rotz_parser(argc, argv, argi)) {
+	if (yuck_parse(argi, argc, argv)) {
 		res = 1;
 		goto out;
 	}
 
-	if (argi->database_given) {
+	if (argi->database_arg) {
 		db = argi->database_arg;
 	}
-	if (argi->verbose_given) {
+	if (argi->verbose_flag) {
 		verbosep = 1;
 	}
 
@@ -168,25 +161,25 @@ main(int argc, char *argv[])
 		res = 1;
 		goto out;
 	}
-	if (argi->inputs_num > 1) {
+	if (argi->nargs > 1U) {
 		const char *tag;
 		rtz_vtx_t tid;
 
-		tag = rotz_tag(argi->inputs[0]);
+		tag = rotz_tag(argi->args[0U]);
 		if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
 			if (UNLIKELY(verbosep)) {
 				fprintf(stderr, "\
-Error: cannot find tag `%s' in database file, no deletions\n", argi->inputs[0]);
+Error: cannot find tag `%s' in database file, no deletions\n", argi->args[0U]);
 			}
 			goto fini;
 		}
-		for (unsigned int i = 1; i < argi->inputs_num; i++) {
-			del_tag(ctx, tid, argi->inputs[i]);
+		for (size_t i = 1U; i < argi->nargs; i++) {
+			del_tag(ctx, tid, argi->args[i]);
 		}
-	} else if (argi->inputs_num == 1 && isatty(STDIN_FILENO)) {
+	} else if (argi->nargs == 1U && isatty(STDIN_FILENO)) {
 		/* del all syms assoc'd with TAG */
-		del_syms(ctx, argi->inputs[0]);
-	} else if (argi->inputs_num == 1) {
+		del_syms(ctx, argi->args[0U]);
+	} else if (argi->nargs == 1U) {
 		/* del tag/sym pairs from stdin */
 		char *line = NULL;
 		size_t llen = 0U;
@@ -194,11 +187,11 @@ Error: cannot find tag `%s' in database file, no deletions\n", argi->inputs[0]);
 		const char *tag;
 		rtz_vtx_t tid;
 
-		tag = rotz_tag(argi->inputs[0]);
+		tag = rotz_tag(argi->args[0U]);
 		if (UNLIKELY((tid = rotz_get_vertex(ctx, tag)) == 0U)) {
 			if (UNLIKELY(verbosep)) {
 				fprintf(stderr, "\
-Error: cannot find tag `%s' in database file, no deletions\n", argi->inputs[0]);
+Error: cannot find tag `%s' in database file, no deletions\n", argi->args[0U]);
 			}
 			goto fini;
 		}
@@ -214,7 +207,7 @@ Error: cannot find tag `%s' in database file, no deletions\n", argi->inputs[0]);
 		size_t llen = 0U;
 		ssize_t nrd;
 
-		if (argi->syms_given) {
+		if (argi->syms_flag) {
 			while ((nrd = getline(&line, &llen, stdin)) > 0) {
 				line[nrd - 1] = '\0';
 				del_sym(ctx, line);
@@ -232,7 +225,7 @@ fini:
 	/* big resource freeing */
 	free_rotz(ctx);
 out:
-	rotz_parser_free(argi);
+	yuck_free(argi);
 	return res;
 }
 #endif	/* STANDALONE */

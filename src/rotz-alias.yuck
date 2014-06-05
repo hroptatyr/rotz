@@ -1,0 +1,11 @@
+Usage: rotz-alias [OPTIONS]... [TAG [ALIAS]]...
+
+Make ALIAS an alias for TAG.
+
+If ALIAS is omitted on the command line, read aliases from stdin.
+if no aliases are present on stdin, show aliases for TAG.
+
+If TAG is omitted show all tags and their aliases.
+
+  -d, --delete              Delete alias TAG.
+      --database=FILE|HOST  Tagging service file or host, default: `rotz.tcb'

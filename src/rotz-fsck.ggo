@@ -1,8 +1,0 @@
-args "--unamed-opts --no-handle-error --long-help -a rotz_args_info -f rotz_parser"
-package "rotz-update"
-usage "rotz-update [OPTIONS...]"
-description "Update old database files to new policies."
-
-option "database" -
-	"Tagging service file or host, default: `rotz.tcb'"
-	string typestr="FILE|HOST" optional

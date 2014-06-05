@@ -27,7 +27,7 @@ AC_COPYRIGHT([dnl
 AM_INIT_AUTOMAKE([foreign parallel-tests dist-xz color-tests])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-GIT_VERSION_MAGIC
+AX_YUCK_SCMVER([version.mk])
 AC_CONFIG_LINKS([GNUmakefile:GNUmakefile])
 
 ## the build chain
@@ -36,8 +36,6 @@ SXE_CHECK_CC([c11 c1x c99 gnu99])
 SXE_CHECK_CFLAGS
 AC_CHECK_TOOLS([AR], [xiar ar], [false])
 AC_C_BIGENDIAN
-
-AM_MISSING_PROG([HELP2MAN], [help2man], ["${missing_dir}"])
 
 AC_ARG_WITH([database], [dnl
 AS_HELP_STRING([--with-database], [
@@ -63,12 +61,15 @@ case "${with_database}" in
 	;;
 esac
 
+AX_CHECK_YUCK
+
 ## libtool goddess^Wgoodness
 ## has to be down here as we're turning -Werror'ing off
 LT_INIT
 SXE_CHECK_LIBTOOL
 
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([build-aux/Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([info/Makefile])
 AC_CONFIG_FILES([test/Makefile])
