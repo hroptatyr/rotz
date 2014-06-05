@@ -14,7 +14,6 @@ man1_MANS =
 man1_MANS += $(built_mans)
 
 BUILT_SOURCES += $(built_mans) $(built_infos)
-SUFFIXES =
 
 built_mans =
 built_mans += rotz.man
