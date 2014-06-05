@@ -37,8 +37,6 @@ SXE_CHECK_CFLAGS
 AC_CHECK_TOOLS([AR], [xiar ar], [false])
 AC_C_BIGENDIAN
 
-AM_MISSING_PROG([HELP2MAN], [help2man], ["${missing_dir}"])
-
 AC_ARG_WITH([database], [dnl
 AS_HELP_STRING([--with-database], [
 db backend to use, one of tokyo(cabinet), lmdb])],
